@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TrackMate — Productivity & Personal Progress Tracker
+
+TrackMate is a full-stack productivity and personal progress tracking application built with Next.js (App Router), TypeScript, Tailwind CSS, Supabase (PostgreSQL + Auth), Recharts, and Framer Motion.
+
+## Features
+
+- **Authentication**: Sign up, login, logout, forgot password, and protected dashboard routes via Supabase Auth.
+- **Dashboard**: Real-time overview of total, completed, pending, and overdue tasks, active goals, habit streaks, productivity percentage, weekly activity chart, and recent tasks.
+- **Task Management**: Full CRUD with status (`todo`, `in_progress`, `completed`), priority (`low`, `medium`, `high`), categories, deadlines, search, filtering, and sorting.
+- **Goal Management**: Create personal/professional goals, track progress percentages, and manage expandable milestones.
+- **Habit Tracker**: Weekly habit grid with daily completion toggles, custom colors, frequencies, and streak tracking.
+- **Analytics**: Interactive Recharts visualizations (weekly activity bar chart, productivity trend line chart, tasks by status and priority donut charts).
+- **Calendar View**: Monthly calendar displaying tasks on their deadline dates with priority color coding and day-detail modals.
+- **Notifications**: Notification center with unread filtering, mark-as-read, mark-all-read, and delete actions.
+- **Profile & Settings**: Manage user profile info, notification preferences, and theme settings.
+
+## Tech Stack
+
+- **Frontend**: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, Framer Motion, Recharts, Lucide React
+- **Backend**: Next.js API Routes, Supabase SSR
+- **Database & Auth**: PostgreSQL on Supabase with Row Level Security (RLS)
+- **Validation**: Zod
 
 ## Getting Started
 
-First, run the development server:
+### 1. Install Dependencies
+
+```bash
+npm install
+```
+
+### 2. Configure Environment Variables
+
+Copy `.env.example` to `.env.local` and fill in your Supabase project credentials:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+```
+
+### 3. Set Up the Database
+
+Open the SQL Editor in your Supabase Dashboard and run the contents of `src/lib/supabase/schema.sql`. This creates all tables (`users`, `tasks`, `goals`, `milestones`, `habits`, `habit_logs`, `notifications`, `user_settings`), enums, indexes, triggers, and Row Level Security policies.
+
+### 4. Run the Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deployment (Vercel + Supabase)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Push the repository to GitHub.
+2. Import the project in Vercel.
+3. Add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in Vercel Environment Variables.
+4. Deploy.
