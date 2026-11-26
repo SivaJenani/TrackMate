@@ -169,7 +169,14 @@ export default function DashboardPage() {
     return "";
   });
 
-  return <div className="dashboard-redesign space-y-4 sm:space-y-5" style={{ "--dash-accent": CYAN } as React.CSSProperties}>
+  return <div className="dashboard-redesign min-h-screen space-y-4 bg-[#080d0f] text-[#f0f2e9] sm:space-y-5" style={{ "--dash-accent": CYAN } as React.CSSProperties}>
+    <style jsx global>{`
+      body:has(.dashboard-redesign) > div { background: #080d0f !important; }
+      body:has(.dashboard-redesign) header { background: rgba(8,13,15,.9) !important; border-color: rgba(255,255,255,.08) !important; }
+      body:has(.dashboard-redesign) header h1 { color: #f0f2e9 !important; }
+      body:has(.dashboard-redesign) header a,
+      body:has(.dashboard-redesign) header button { color: #9baab0 !important; }
+    `}</style>
     <style jsx global>{`
       .dashboard-redesign .dash-accent { color: ${CYAN}; }
       .dashboard-redesign .dash-border { border-color: rgba(54,210,255,.22); }
