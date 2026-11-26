@@ -105,7 +105,7 @@ export default function DashboardPage() {
     return map;
   }, [logs]);
   const currentStreak = Math.max(0, ...uniqueHabits.map((habit) => habit.streak || 0));
-  const longestStreak = stats?.longest_streak ?? maxStreakDays(logs);
+  const longestStreak = maxStreakDays(logs);
   const weekChart = selectedWeekDates.map((date, i) => {
     const key = iso(date);
     const completed = uniqueHabits.filter((habit) => logsByHabit.get(habit.id)?.has(key)).length;
