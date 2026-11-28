@@ -97,7 +97,7 @@ function createInitialStore(): DemoStore {
         id: "goal-1",
         user_id: "demo-user-001",
         title: "Launch TrackMate MVP",
-        description: "Ship core task, goal, habit, and analytics features.",
+        description: "Ship core task, goal, and habit features.",
         target_date: `${tomorrow}T00:00:00.000Z`,
         progress: 75,
         status: "active",
