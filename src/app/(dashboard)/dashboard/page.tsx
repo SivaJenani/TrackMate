@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Activity, ArrowUpRight, Crown, Dumbbell, Flame, Heart, Trophy } from "lucide-react";
+import { ArrowUpRight, Flame, Trophy } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { getHabitIcon } from "@/lib/habit-icons";
 import type { DashboardStats, Habit, HabitLog, Task } from "@/types";
 
 const CYAN = "#36d2ff";
@@ -158,7 +159,6 @@ export default function DashboardPage() {
   const weekPercent = weekPossible ? Math.round((weekTotal / weekPossible) * 100) : 0;
   const monthlyConsistency = currentMonthRate;
   const tasksDone = tasks.filter((task) => task.status === "completed").length;
-  const moduleIcons = [Dumbbell, Activity, Heart, Crown];
   const heatmapWeeks = Array.from({ length: 12 }, (_, weekIndex) =>
     Array.from({ length: 7 }, (_, dayIndex) => historyDates[weekIndex * 7 + dayIndex])
   );
@@ -229,11 +229,11 @@ export default function DashboardPage() {
     <section className={`${panel("dash-border p-4 sm:p-5")}`}>
       <div className="mb-4 flex items-end justify-between gap-3"><div><p className="dash-kicker">Modules</p><h2 className="mt-1 text-xl font-bold text-[#ecf0e5]">Your habits, in motion</h2></div><a href="/habits" className="inline-flex items-center gap-1 text-xs font-semibold text-[#36d2ff] hover:text-[#9ceaff]">All habits <ArrowUpRight className="h-3.5 w-3.5" /></a></div>
       {uniqueHabits.length ? <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {uniqueHabits.map((habit, index) => {
+        {uniqueHabits.map((habit) => {
           const days = logsByHabit.get(habit.id) ?? new Set<string>();
           const complete = weekDays.filter((day) => days.has(day)).length;
           const ratio = Math.round(complete / 7 * 100);
-          const Icon = moduleIcons[index % moduleIcons.length];
+          const Icon = getHabitIcon(habit);
           return <article key={habit.id} className="rounded-xl border border-white/[0.08] bg-[#0b0f11] p-4">
             <div className="flex items-center justify-between gap-2"><div className="flex min-w-0 items-center gap-2"><Icon className="h-4 w-4 shrink-0 text-[#36d2ff]" /><h3 className="truncate text-xs font-semibold uppercase tracking-wide text-[#dce1d5]">{habit.name}</h3></div><span className="flex shrink-0 items-center gap-1 text-xs font-bold text-[#36d2ff]"><Flame className="h-3.5 w-3.5" />{habit.streak}</span></div>
             <div className="mt-4 flex items-center justify-center"><Ring value={ratio} /></div>
