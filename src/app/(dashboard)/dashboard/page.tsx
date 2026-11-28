@@ -49,7 +49,7 @@ function Ring({ value, size = 92 }: { value: number; size?: number }) {
 }
 
 function panel(extra = "") {
-  return `rounded-2xl border border-white/[0.08] bg-[#101416] shadow-[0_8px_30px_rgba(0,0,0,.18)] ${extra}`;
+  return `rounded-2xl border border-white/[0.08] bg-[#0F1424] shadow-[0_8px_30px_rgba(0,0,0,.18)] ${extra}`;
 }
 
 export default function DashboardPage() {
@@ -169,9 +169,9 @@ export default function DashboardPage() {
     return "";
   });
 
-  return <div className="dashboard-redesign min-h-screen space-y-4 bg-[#080d0f] text-[#f0f2e9] sm:space-y-5" style={{ "--dash-accent": CYAN } as React.CSSProperties}>
+  return <div className="dashboard-redesign min-h-screen space-y-4 bg-[#090D19] text-[#f0f2e9] sm:space-y-5" style={{ "--dash-accent": CYAN } as React.CSSProperties}>
     <style jsx global>{`
-      body:has(.dashboard-redesign) > div:not([data-rht-toaster]) { background: #080d0f !important; }
+      body:has(.dashboard-redesign) > div:not([data-rht-toaster]) { background: #090D19 !important; }
       body:has(.dashboard-redesign) > [data-rht-toaster] { background: transparent !important; pointer-events: none; }
       body:has(.dashboard-redesign) > [data-rht-toaster]:empty { z-index: 0 !important; }
       body:has(.dashboard-redesign) header { background: rgba(8,13,15,.9) !important; border-color: rgba(255,255,255,.08) !important; }
@@ -212,7 +212,7 @@ export default function DashboardPage() {
             <XAxis dataKey="day" tick={{ fill: MUTED, fontSize: 10 }} tickLine={false} axisLine={false} />
             <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={(value) => `${value}%`} tick={{ fill: MUTED, fontSize: 10 }} tickLine={false} axisLine={false} width={56} />
             <Tooltip formatter={(value) => [`${value}%`, "Completion"]} labelFormatter={(label, payload) => payload?.[0]?.payload?.date ? `${label} ${payload[0].payload.date}` : label} contentStyle={{ background: "#12191b", border: "1px solid rgba(54,210,255,.24)", borderRadius: 10, color: "#f0f2e9", fontSize: 12 }} labelStyle={{ color: CYAN }} />
-            <Area isAnimationActive={false} type="monotone" dataKey="value" name="Completion" stroke={CYAN} strokeWidth={3} fill="url(#dashboardProgressFill)" dot={{ r: 3, fill: CYAN, stroke: "#101416", strokeWidth: 2 }} activeDot={{ r: 5, fill: CYAN, stroke: "#101416", strokeWidth: 2 }} />
+            <Area isAnimationActive={false} type="monotone" dataKey="value" name="Completion" stroke={CYAN} strokeWidth={3} fill="url(#dashboardProgressFill)" dot={{ r: 3, fill: CYAN, stroke: "#0F1424", strokeWidth: 2 }} activeDot={{ r: 5, fill: CYAN, stroke: "#0F1424", strokeWidth: 2 }} />
           </AreaChart></ResponsiveContainer>
         </div>
       </div>
@@ -234,7 +234,7 @@ export default function DashboardPage() {
           const complete = weekDays.filter((day) => days.has(day)).length;
           const ratio = Math.round(complete / 7 * 100);
           const Icon = getHabitIcon(habit);
-          return <article key={habit.id} className="rounded-xl border border-white/[0.08] bg-[#0b0f11] p-4">
+          return <article key={habit.id} className="rounded-xl border border-white/[0.08] bg-[#070A14] p-4">
             <div className="flex items-center justify-between gap-2"><div className="flex min-w-0 items-center gap-2"><Icon className="h-4 w-4 shrink-0 text-[#36d2ff]" /><h3 className="truncate text-xs font-semibold uppercase tracking-wide text-[#dce1d5]">{habit.name}</h3></div><span className="flex shrink-0 items-center gap-1 text-xs font-bold text-[#36d2ff]"><Flame className="h-3.5 w-3.5" />{habit.streak}</span></div>
             <div className="mt-4 flex items-center justify-center"><Ring value={ratio} /></div>
             <p className="mt-2 text-center text-[10px] font-semibold uppercase tracking-[.14em] text-[#9baab0]">{complete} / 7 days</p>
@@ -284,7 +284,7 @@ export default function DashboardPage() {
         <ul className="space-y-3">{[...uniqueHabits].sort((a, b) => b.streak - a.streak).map((habit) => <li key={habit.id} className="flex items-center justify-between gap-3 border-b border-white/[0.06] pb-2 last:border-0"><span className="flex min-w-0 items-center gap-2 truncate text-sm text-[#d9ded2]"><Flame className="h-4 w-4 shrink-0 text-[#36d2ff]" />{habit.name}</span><span className="shrink-0 text-xs font-bold text-[#36d2ff]">{habit.streak} days</span></li>)}{!uniqueHabits.length && <li className="py-4 text-center text-sm text-[#86969c]">No streaks yet. Log a habit to start one.</li>}</ul>
       </div>
       <div className={`${panel("dash-border p-4 sm:p-5")}`}>
-        <div className="mb-3 flex items-center justify-between gap-3"><div><p className="dash-kicker">Weekly progress</p><p className="mt-1 text-xs text-[#86969c]">Habit completion by day</p></div><label className="relative"><span className="sr-only">Select week</span><select value={weekSelection} onChange={(event) => setWeekSelection(event.target.value as "this" | "last")} className="appearance-none rounded-lg border border-white/10 bg-[#101416] py-1.5 pl-3 pr-7 text-[10px] font-medium text-[#9baab0] focus:outline-none focus:ring-1 focus:ring-[#36d2ff]"><option value="this">This Week</option><option value="last">Last Week</option></select><span aria-hidden="true" className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-[#9baab0]">⌄</span></label></div>
+        <div className="mb-3 flex items-center justify-between gap-3"><div><p className="dash-kicker">Weekly progress</p><p className="mt-1 text-xs text-[#86969c]">Habit completion by day</p></div><label className="relative"><span className="sr-only">Select week</span><select value={weekSelection} onChange={(event) => setWeekSelection(event.target.value as "this" | "last")} className="appearance-none rounded-lg border border-white/10 bg-[#0F1424] py-1.5 pl-3 pr-7 text-[10px] font-medium text-[#9baab0] focus:outline-none focus:ring-1 focus:ring-[#36d2ff]"><option value="this">This Week</option><option value="last">Last Week</option></select><span aria-hidden="true" className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-[#9baab0]">⌄</span></label></div>
         <div className="h-48"><ResponsiveContainer width="100%" height="100%"><BarChart data={weekChart} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} barCategoryGap="20%">
           <CartesianGrid vertical={false} stroke="rgba(255,255,255,.07)" />
           <XAxis dataKey="day" tick={{ fill: MUTED, fontSize: 10 }} tickLine={false} axisLine={false} />
