@@ -246,9 +246,9 @@ export default function DashboardPage() {
     <div className="space-y-4 text-[#f0f2e9] sm:space-y-5">
       <section className={`${card} relative overflow-hidden p-6 sm:p-8`}>
         <HeroScene />
-        <div className="relative max-w-xl">
+        <div className="relative max-w-2xl">
           <p className="mb-3 text-[11px] font-semibold uppercase tracking-[.16em] text-[#9ceaff]">Your discipline dashboard</p>
-          <h1 className="text-4xl font-extrabold uppercase leading-[1] tracking-tight sm:text-5xl">Discipline today,<br /><span style={{ color: ACCENT }}>freedom</span> tomorrow.</h1>
+          <h1 className="text-[28px] font-extrabold uppercase leading-[1.05] tracking-tight sm:text-5xl">Discipline today,<br /><span style={{ color: ACCENT }}>freedom tomorrow.</span></h1>
           <p className="mt-4 flex items-start gap-2 text-sm italic text-[#9baab0] sm:text-base"><span aria-hidden="true" className="text-2xl font-bold not-italic leading-none text-[#36d2ff]">&ldquo;</span>Consistency in the small things creates extraordinary results.</p>
         </div>
       </section>
@@ -293,10 +293,10 @@ export default function DashboardPage() {
           {uniqueHabits.length ? (
             <div className="h-[200px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={weekBars} margin={{ top: 18, right: 4, left: -22, bottom: 0 }} barCategoryGap="22%">
+                <BarChart data={weekBars} margin={{ top: 18, right: 4, left: -6, bottom: 0 }} barCategoryGap="22%">
                   <CartesianGrid vertical={false} stroke="rgba(255,255,255,.07)" />
                   <XAxis dataKey="day" tick={axis} tickLine={false} axisLine={false} />
-                  <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={(v) => `${v}%`} tick={axis} tickLine={false} axisLine={false} width={44} />
+                  <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={(v) => `${v}%`} tick={axis} tickLine={false} axisLine={false} width={40} />
                   <Tooltip cursor={{ fill: "rgba(255,255,255,.04)" }} formatter={(v, _n, item) => [`${v}% (${item.payload.done} / ${uniqueHabits.length} habits)`, "Completion"]} contentStyle={tip} />
                   <Bar dataKey="value" fill={ACCENT} radius={[5, 5, 0, 0]} maxBarSize={30} isAnimationActive={false}>
                     <LabelList dataKey="value" position="top" formatter={(v) => `${v}%`} fill={ACCENT_SOFT} fontSize={9} />
@@ -340,11 +340,11 @@ export default function DashboardPage() {
           {trendHasData ? (
             <div className="h-[200px]">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={trend} margin={{ top: 8, right: 8, left: -22, bottom: 0 }}>
+                <AreaChart data={trend} margin={{ top: 8, right: 8, left: -6, bottom: 0 }}>
                   <defs><linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={ACCENT} stopOpacity=".28" /><stop offset="1" stopColor={ACCENT} stopOpacity="0" /></linearGradient></defs>
                   <CartesianGrid vertical={false} stroke="rgba(255,255,255,.07)" />
                   <XAxis dataKey="label" tick={axis} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={24} />
-                  <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={(v) => `${v}%`} tick={axis} tickLine={false} axisLine={false} width={44} />
+                  <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={(v) => `${v}%`} tick={axis} tickLine={false} axisLine={false} width={40} />
                   <Tooltip formatter={(v) => [`${v}%`, "Tasks completed"]} contentStyle={tip} />
                   <Area type="monotone" dataKey="value" stroke={ACCENT} strokeWidth={2} fill="url(#trendFill)" dot={range === 7 ? { r: 3, fill: ACCENT, stroke: "#132130" } : false} connectNulls={false} isAnimationActive={false} />
                 </AreaChart>
