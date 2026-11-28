@@ -11,7 +11,6 @@ const features = [
   { icon: CheckSquare, title: "Task Management", description: "Organize your daily tasks with priorities, deadlines, and categories." },
   { icon: Target, title: "Goal Setting", description: "Define personal and professional goals with measurable milestones." },
   { icon: Flame, title: "Habit Tracking", description: "Build consistent habits and track your daily streaks." },
-  { icon: BarChart3, title: "Analytics", description: "Visualize your productivity with interactive charts and insights." },
   { icon: CalendarDays, title: "Calendar View", description: "See all your tasks and deadlines in a beautiful calendar layout." },
   { icon: Bell, title: "Smart Reminders", description: "Never miss a deadline with intelligent notification reminders." },
 ];
