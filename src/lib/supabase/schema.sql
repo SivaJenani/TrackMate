@@ -238,3 +238,6 @@ DO $$ BEGIN
   DROP POLICY IF EXISTS "Users can update own settings" ON public.user_settings;
   CREATE POLICY "Users can update own settings" ON public.user_settings FOR UPDATE USING (auth.uid() = user_id);
 END $$;
+
+-- Habit monthly goal (target number of days per month); optional
+ALTER TABLE public.habits ADD COLUMN IF NOT EXISTS goal_days INTEGER CHECK (goal_days IS NULL OR (goal_days BETWEEN 1 AND 31));
