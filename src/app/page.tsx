@@ -92,13 +92,13 @@ export default function LandingPage() {
           transition={{ duration: 0.6, delay: 0.3 }}
           className="mt-20 relative"
         >
-          <div className="bg-white rounded-3xl shadow-2xl shadow-gray-200/50 border border-gray-100 overflow-hidden p-6 sm:p-8">
+          <div className="bg-white rounded-3xl shadow-2xl shadow-black/30 border border-gray-100 overflow-hidden p-6 sm:p-8">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               {[
-                { label: "Tasks Done", value: "128", color: "bg-green-50 text-green-600" },
-                { label: "Active Goals", value: "5", color: "bg-cyan-50 text-[#00B4F0]" },
-                { label: "Day Streak", value: "21", color: "bg-orange-50 text-orange-600" },
-                { label: "Productivity", value: "87%", color: "bg-purple-50 text-purple-600" },
+                { label: "Tasks Done", value: "128", color: "bg-green-500/10 text-green-400" },
+                { label: "Active Goals", value: "5", color: "bg-[#00B4F0]/10 text-[#00B4F0]" },
+                { label: "Day Streak", value: "21", color: "bg-orange-500/10 text-orange-400" },
+                { label: "Productivity", value: "87%", color: "bg-purple-500/10 text-purple-400" },
               ].map((stat) => (
                 <div key={stat.label} className={`${stat.color} rounded-2xl p-4 text-center`}>
                   <p className="text-2xl font-bold">{stat.value}</p>
@@ -106,7 +106,7 @@ export default function LandingPage() {
                 </div>
               ))}
             </div>
-            <div className="h-32 bg-gradient-to-r from-[#00B4F0]/5 to-cyan-50/50 rounded-2xl flex items-center justify-center">
+            <div className="h-32 bg-gradient-to-r from-[#00B4F0]/10 to-[#00B4F0]/5 rounded-2xl flex items-center justify-center">
               <BarChart3 className="w-16 h-16 text-[#00B4F0]/20" />
             </div>
           </div>
