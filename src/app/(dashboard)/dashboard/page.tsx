@@ -48,7 +48,7 @@ function ago(value: string, now: Date) {
   return days === 1 ? "Yesterday" : `${days}d ago`;
 }
 
-const card = "rounded-2xl border border-white/[0.08] bg-[#132130]";
+const card = "rounded-2xl border border-white/[0.08] bg-[#0F1424]";
 
 function Ring({ value, size = 64 }: { value: number; size?: number }) {
   const r = 40;
@@ -88,7 +88,7 @@ function HeroScene() {
     <svg aria-hidden="true" viewBox="0 0 600 280" preserveAspectRatio="xMaxYMax slice" className="absolute inset-y-0 right-0 hidden h-full w-[62%] sm:block">
       <defs>
         <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={ACCENT} stopOpacity=".10" /><stop offset="1" stopColor={ACCENT} stopOpacity="0" /></linearGradient>
-        <linearGradient id="fadeL" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#132130" /><stop offset=".45" stopColor="#132130" stopOpacity="0" /></linearGradient>
+        <linearGradient id="fadeL" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#0F1424" /><stop offset=".45" stopColor="#0F1424" stopOpacity="0" /></linearGradient>
       </defs>
       <rect width="600" height="280" fill="url(#sky)" />
       <circle cx="400" cy="150" r="92" fill="none" stroke={ACCENT} strokeOpacity=".55" strokeWidth="1.5" />
@@ -333,7 +333,7 @@ export default function DashboardPage() {
       <section className="grid gap-4 lg:grid-cols-3">
         <div className={`${card} flex flex-col p-5`}>
           <CardHead icon={Zap} title="Productivity Trend" sub="Share of tasks completed over time" right={
-            <div className="flex shrink-0 rounded-lg border border-white/10 bg-[#0B1620] p-0.5">
+            <div className="flex shrink-0 rounded-lg border border-white/10 bg-[#070A14] p-0.5">
               {([7, 30, 90] as const).map((r) => <button key={r} onClick={() => setRange(r)} aria-pressed={range === r} className={`rounded-md px-2 py-1 text-[10px] font-semibold ${range === r ? "bg-[#36d2ff] text-[#05080B]" : "text-[#9baab0] hover:text-white"}`}>{r}D</button>)}
             </div>
           } />
@@ -346,7 +346,7 @@ export default function DashboardPage() {
                   <XAxis dataKey="label" tick={axis} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={24} />
                   <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={(v) => `${v}%`} tick={axis} tickLine={false} axisLine={false} width={40} />
                   <Tooltip formatter={(v) => [`${v}%`, "Tasks completed"]} contentStyle={tip} />
-                  <Area type="monotone" dataKey="value" stroke={ACCENT} strokeWidth={2} fill="url(#trendFill)" dot={range === 7 ? { r: 3, fill: ACCENT, stroke: "#132130" } : false} connectNulls={false} isAnimationActive={false} />
+                  <Area type="monotone" dataKey="value" stroke={ACCENT} strokeWidth={2} fill="url(#trendFill)" dot={range === 7 ? { r: 3, fill: ACCENT, stroke: "#0F1424" } : false} connectNulls={false} isAnimationActive={false} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
