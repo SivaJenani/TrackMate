@@ -6,7 +6,6 @@ const PROTECTED_PREFIXES = [
   '/tasks',
   '/goals',
   '/habits',
-  '/analytics',
   '/calendar',
   '/notifications',
   '/profile',
