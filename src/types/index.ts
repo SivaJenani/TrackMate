@@ -57,6 +57,7 @@ export interface Habit {
   description: string | null;
   frequency: HabitFrequency;
   color: string;
+  icon?: string | null;
   streak: number;
   created_at: string;
   updated_at: string;
