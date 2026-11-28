@@ -174,7 +174,7 @@ export default function DashboardPage() {
       body:has(.dashboard-redesign) > div:not([data-rht-toaster]) { background: #090D19 !important; }
       body:has(.dashboard-redesign) > [data-rht-toaster] { background: transparent !important; pointer-events: none; }
       body:has(.dashboard-redesign) > [data-rht-toaster]:empty { z-index: 0 !important; }
-      body:has(.dashboard-redesign) header { background: rgba(8,13,15,.9) !important; border-color: rgba(255,255,255,.08) !important; }
+      body:has(.dashboard-redesign) header { background: rgba(9,13,25,.9) !important; border-color: rgba(255,255,255,.08) !important; }
       body:has(.dashboard-redesign) header h1 { color: #f0f2e9 !important; }
       body:has(.dashboard-redesign) header a,
       body:has(.dashboard-redesign) header button { color: #9baab0 !important; }
