@@ -1,20 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { Activity, ArrowUpRight, CheckSquare, Flame, Flag, Target, Trophy, Zap } from "lucide-react";
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowUpRight, Flame, Trophy } from "lucide-react";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { getHabitIcon } from "@/lib/habit-icons";
-import type { Goal, Habit, HabitLog, Task } from "@/types";
+import type { DashboardStats, Habit, HabitLog, Task } from "@/types";
 
-const ACCENT = "#36d2ff";
-const ACCENT_SOFT = "#9ceaff";
+const CYAN = "#36d2ff";
 const MUTED = "#8b9480";
-const TEXT = "#f0f2e9";
-const DAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const SHORT_DAYS = ["M", "T", "W", "T", "F", "S", "S"];
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const shift = (date: Date, days: number) => { const d = new Date(date); d.setDate(d.getDate() + days); return d; };
-const localDay = (value: string) => iso(new Date(value));
 const normalize = (name: string) => name.trim().replace(/\s+/g, " ").toLocaleLowerCase();
 
 function maxStreakDays(logs: HabitLog[]) {
@@ -26,11 +23,13 @@ function maxStreakDays(logs: HabitLog[]) {
   }
   let longest = 0;
   for (const days of byHabit.values()) {
+    const sorted = [...days].sort();
     let run = 0;
     let prev = "";
-    for (const day of [...days].sort()) {
+    for (const day of sorted) {
       const date = new Date(`${day}T12:00:00`);
-      run = prev === iso(shift(date, -1)) ? run + 1 : 1;
+      const prior = new Date(date); prior.setDate(prior.getDate() - 1);
+      run = prev === iso(prior) ? run + 1 : 1;
       longest = Math.max(longest, run);
       prev = day;
     }
@@ -38,133 +37,66 @@ function maxStreakDays(logs: HabitLog[]) {
   return longest;
 }
 
-function ago(value: string, now: Date) {
-  const mins = Math.max(0, Math.round((now.getTime() - new Date(value).getTime()) / 60000));
-  if (mins < 1) return "Just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.round(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.round(hrs / 24);
-  return days === 1 ? "Yesterday" : `${days}d ago`;
-}
-
-const card = "rounded-2xl border border-white/[0.08] bg-[#0F1424]";
-
-function Ring({ value, size = 64 }: { value: number; size?: number }) {
-  const r = 40;
-  const c = 2 * Math.PI * r;
+function Ring({ value, size = 92 }: { value: number; size?: number }) {
+  const radius = 38;
+  const circumference = 2 * Math.PI * radius;
   const safe = Math.max(0, Math.min(100, value));
-  return (
-    <svg role="img" aria-label={`${safe}% complete`} width={size} height={size} viewBox="0 0 100 100" className="shrink-0">
-      <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(255,255,255,.08)" strokeWidth="9" />
-      <circle cx="50" cy="50" r={r} fill="none" stroke={ACCENT} strokeWidth="9" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - safe / 100)} transform="rotate(-90 50 50)" />
-      <text x="50" y="51" textAnchor="middle" dominantBaseline="middle" fill={TEXT} fontSize="22" fontWeight="700">{safe}%</text>
-    </svg>
-  );
+  return <svg aria-label={`${safe}% complete`} role="img" width={size} height={size} viewBox="0 0 100 100" className="shrink-0 -rotate-90">
+    <circle cx="50" cy="50" r={radius} fill="none" stroke="rgba(54,210,255,.12)" strokeWidth="8" />
+    <circle cx="50" cy="50" r={radius} fill="none" stroke={CYAN} strokeWidth="8" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={circumference * (1 - safe / 100)} />
+    <text x="50" y="53" textAnchor="middle" dominantBaseline="middle" className="rotate-90" transform="rotate(90 50 50)" fill="#f1f3eb" fontSize="20" fontWeight="700">{safe}%</text>
+  </svg>;
 }
 
-function Donut({ rows, center }: { rows: { label: string; value: number | null; opacity: number }[]; center: number | null }) {
-  const radii = [44, 33, 22];
-  return (
-    <svg role="img" aria-label="Overall progress" viewBox="0 0 110 110" className="h-40 w-40 shrink-0">
-      {rows.map((row, i) => {
-        const c = 2 * Math.PI * radii[i];
-        const v = Math.max(0, Math.min(100, row.value ?? 0));
-        return (
-          <g key={row.label} transform="rotate(-90 55 55)">
-            <circle cx="55" cy="55" r={radii[i]} fill="none" stroke="rgba(255,255,255,.07)" strokeWidth="7" />
-            <circle cx="55" cy="55" r={radii[i]} fill="none" stroke={ACCENT} strokeOpacity={row.opacity} strokeWidth="7" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - v / 100)} />
-          </g>
-        );
-      })}
-      <text x="55" y="53" textAnchor="middle" dominantBaseline="middle" fill={TEXT} fontSize="15" fontWeight="700">{center === null ? "--" : `${center}%`}</text>
-      <text x="55" y="66" textAnchor="middle" fill={MUTED} fontSize="6">Overall</text>
-    </svg>
-  );
-}
-
-function HeroScene() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 600 280" preserveAspectRatio="xMaxYMax slice" className="absolute inset-y-0 right-0 hidden h-full w-[62%] sm:block">
-      <defs>
-        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={ACCENT} stopOpacity=".10" /><stop offset="1" stopColor={ACCENT} stopOpacity="0" /></linearGradient>
-        <linearGradient id="fadeL" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#0F1424" /><stop offset=".45" stopColor="#0F1424" stopOpacity="0" /></linearGradient>
-      </defs>
-      <rect width="600" height="280" fill="url(#sky)" />
-      <circle cx="400" cy="150" r="92" fill="none" stroke={ACCENT} strokeOpacity=".55" strokeWidth="1.5" />
-      <circle cx="400" cy="150" r="104" fill="none" stroke={ACCENT} strokeOpacity=".18" strokeWidth="1" />
-      <path d="M0 280 L0 215 L70 170 L120 195 L210 110 L270 160 L340 70 L395 125 L450 90 L520 150 L600 105 L600 280 Z" fill="#0d1a1f" />
-      <path d="M0 280 L0 240 L90 205 L160 225 L260 160 L340 215 L420 170 L500 215 L600 180 L600 280 Z" fill="#12242b" />
-      <path d="M210 110 L240 140 L225 138 L215 150 L200 132 Z M340 70 L372 108 L356 104 L346 120 L330 100 Z M450 90 L474 116 L460 112 L452 124 L440 108 Z" fill={ACCENT_SOFT} fillOpacity=".55" />
-      <path d="M0 215 L70 170 L120 195 L210 110 L270 160 L340 70 L395 125 L450 90 L520 150 L600 105" fill="none" stroke={ACCENT} strokeOpacity=".5" strokeWidth="1.2" />
-      <rect width="600" height="280" fill="url(#fadeL)" />
-    </svg>
-  );
-}
-
-function Empty({ text }: { text: string }) {
-  return <p className="flex flex-1 items-center justify-center rounded-xl border border-dashed border-white/10 px-4 py-8 text-center text-xs text-[#86969c]">{text}</p>;
-}
-
-function CardHead({ icon: Icon, title, sub, right }: { icon: typeof Target; title: string; sub?: string; right?: React.ReactNode }) {
-  return (
-    <div className="mb-4 flex items-start justify-between gap-3">
-      <div className="flex min-w-0 items-start gap-3">
-        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-[#36d2ff]"><Icon className="h-4 w-4" strokeWidth={1.75} /></span>
-        <div className="min-w-0"><h2 className="truncate text-sm font-semibold text-[#f0f2e9]">{title}</h2>{sub && <p className="mt-0.5 text-[11px] text-[#86969c]">{sub}</p>}</div>
-      </div>
-      {right}
-    </div>
-  );
+function panel(extra = "") {
+  return `rounded-2xl border border-white/[0.08] bg-[#101416] shadow-[0_8px_30px_rgba(0,0,0,.18)] ${extra}`;
 }
 
 export default function DashboardPage() {
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [goals, setGoals] = useState<Goal[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
   const [logs, setLogs] = useState<HabitLog[]>([]);
-  const [loaded, setLoaded] = useState(false);
-  const [range, setRange] = useState<7 | 30 | 90>(7);
-  const [showAllActivity, setShowAllActivity] = useState(false);
+  const [weekSelection, setWeekSelection] = useState<"this" | "last">("this");
   const now = useMemo(() => new Date(), []);
   const today = iso(now);
-  const historyStart = iso(shift(now, -84));
+  const dates = useMemo(() => {
+    const monday = new Date(now); monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    return Array.from({ length: 7 }, (_, i) => shift(monday, i));
+  }, [now]);
+  const historyDates = useMemo(() => {
+    const monday = new Date(now); monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    return Array.from({ length: 84 }, (_, i) => shift(monday, i - 77));
+  }, [now]);
+  const historyStart = iso(historyDates[0]);
+  const weekDays = dates.map(iso);
+  const selectedWeekDates = weekSelection === "this" ? dates : dates.map((date) => shift(date, -7));
 
   useEffect(() => {
     let live = true;
-    (async () => {
+    const load = async () => {
       try {
-        const [t, g, h, l] = await Promise.all([
+        const [s, t, h, l] = await Promise.all([
+          fetch("/api/dashboard"),
           fetch("/api/tasks?sortBy=updated_at&sortOrder=desc"),
-          fetch("/api/goals"),
           fetch("/api/habits"),
           fetch(`/api/habits/logs?startDate=${historyStart}&endDate=${today}`),
         ]);
         if (!live) return;
+        if (s.ok) setStats(await s.json());
         if (t.ok) setTasks(await t.json());
-        if (g.ok) setGoals(await g.json());
         if (h.ok) setHabits(await h.json());
         if (l.ok) setLogs(await l.json());
       } catch (e) { console.error(e); }
-      finally { if (live) setLoaded(true); }
-    })();
+    };
+    load();
     return () => { live = false; };
   }, [historyStart, today]);
 
-  const toggleTask = useCallback(async (task: Task) => {
-    const next = task.status === "completed" ? "todo" : "completed";
-    const stamp = new Date().toISOString();
-    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status: next, updated_at: stamp } : t)));
-    try {
-      const res = await fetch(`/api/tasks/${task.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: next }) });
-      if (!res.ok) throw new Error("failed");
-    } catch {
-      setTasks((prev) => prev.map((t) => (t.id === task.id ? task : t)));
-    }
-  }, []);
-
-  const uniqueHabits = useMemo(() => habits.filter((h, i, all) => all.findIndex((c) => normalize(c.name) === normalize(h.name)) === i), [habits]);
-  const logDays = useMemo(() => {
+  const uniqueHabits = useMemo(() => habits.filter((habit, index, all) =>
+    all.findIndex((candidate) => normalize(candidate.name) === normalize(habit.name)) === index
+  ), [habits]);
+  const logsByHabit = useMemo(() => {
     const map = new Map<string, Set<string>>();
     for (const log of logs) {
       const days = map.get(log.habit_id) ?? new Set<string>();
@@ -173,239 +105,196 @@ export default function DashboardPage() {
     }
     return map;
   }, [logs]);
-
-  const doneOn = useCallback((key: string) => uniqueHabits.filter((h) => logDays.get(h.id)?.has(key)).length, [uniqueHabits, logDays]);
-  const rateFor = useCallback((end: Date, days: number) => {
-    if (!uniqueHabits.length) return null;
-    let done = 0;
-    for (let i = 0; i < days; i++) done += doneOn(iso(shift(end, -i)));
-    return Math.round((done / (uniqueHabits.length * days)) * 100);
-  }, [uniqueHabits, doneOn]);
-
-  const tasksTotal = tasks.length;
-  const tasksDone = tasks.filter((t) => t.status === "completed").length;
-  const taskPct = tasksTotal ? Math.round((tasksDone / tasksTotal) * 100) : 0;
-  const habitWeek = rateFor(now, 7);
-  const habitPrev = rateFor(shift(now, -7), 7);
-  const habitDelta = habitWeek !== null && habitPrev !== null ? habitWeek - habitPrev : null;
-  const currentStreak = Math.max(0, ...uniqueHabits.map((h) => h.streak || 0));
+  const currentStreak = Math.max(0, ...uniqueHabits.map((habit) => habit.streak || 0));
   const longestStreak = maxStreakDays(logs);
-
-  const weekBars = Array.from({ length: 7 }, (_, i) => {
-    const date = shift(now, i - 6);
-    const done = doneOn(iso(date));
-    return { day: DAY[date.getDay()], value: uniqueHabits.length ? Math.round((done / uniqueHabits.length) * 100) : 0, done };
+  const weekChart = selectedWeekDates.map((date, i) => {
+    const key = iso(date);
+    const completed = uniqueHabits.filter((habit) => logsByHabit.get(habit.id)?.has(key)).length;
+    return { day: DAY_NAMES[i].toUpperCase(), date: date.getDate(), value: uniqueHabits.length ? Math.round((completed / uniqueHabits.length) * 100) : 0, completed };
+  });
+  const overallChart = weekDays.map((day, i) => {
+    const completed = uniqueHabits.filter((habit) => logsByHabit.get(habit.id)?.has(day)).length;
+    return { day: DAY_NAMES[i].toUpperCase(), date: dates[i].getDate(), value: uniqueHabits.length ? Math.round((completed / uniqueHabits.length) * 100) : 0, completed };
+  });
+  const completionPercentForRange = (start: Date, days: number) => {
+    if (!uniqueHabits.length) return 0;
+    let completed = 0;
+    for (let i = 0; i < days; i++) {
+      const key = iso(shift(start, i));
+      completed += uniqueHabits.filter((habit) => logsByHabit.get(habit.id)?.has(key)).length;
+    }
+    return Math.round((completed / (uniqueHabits.length * days)) * 100);
+  };
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const elapsedMonthDays = now.getDate();
+  const currentMonthRate = completionPercentForRange(monthStart, elapsedMonthDays);
+  const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const previousMonthDays = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
+  const previousMonthComparableDays = Math.min(elapsedMonthDays, previousMonthDays);
+  const previousMonthRate = completionPercentForRange(previousMonthStart, previousMonthComparableDays);
+  const monthlyChange = currentMonthRate - previousMonthRate;
+  const monthStats = useMemo(() => {
+    const monthKeys = [...new Set(historyDates.filter((date) => date.getDate() === 1).map((date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`))];
+    return monthKeys.map((key) => {
+      const [year, month] = key.split("-").map(Number);
+      const start = new Date(year, month - 1, 1);
+      const end = new Date(year, month, 0);
+      const days = end.getDate();
+      const inRange = start >= historyDates[0] && end <= now;
+      let completed = 0;
+      for (let i = 0; i < days; i++) {
+        const date = shift(start, i);
+        if (date > now) break;
+        const dateKey = iso(date);
+        completed += uniqueHabits.filter((habit) => logsByHabit.get(habit.id)?.has(dateKey)).length;
+      }
+      const elapsedDays = Math.min(days, start.getMonth() === now.getMonth() && start.getFullYear() === now.getFullYear() ? now.getDate() : days);
+      const rate = uniqueHabits.length && elapsedDays ? Math.round((completed / (uniqueHabits.length * elapsedDays)) * 100) : 0;
+      return { key, rate, inRange };
+    });
+  }, [historyDates, now, uniqueHabits, logsByHabit]);
+  const bestMonthRate = monthStats.filter((item) => item.inRange).reduce((best, item) => Math.max(best, item.rate), 0);
+  const weekTotal = weekDays.reduce((sum, day) => sum + uniqueHabits.filter((h) => logsByHabit.get(h.id)?.has(day)).length, 0);
+  const weekPossible = uniqueHabits.length * 7;
+  const weekPercent = weekPossible ? Math.round((weekTotal / weekPossible) * 100) : 0;
+  const monthlyConsistency = currentMonthRate;
+  const tasksDone = tasks.filter((task) => task.status === "completed").length;
+  const heatmapWeeks = Array.from({ length: 12 }, (_, weekIndex) =>
+    Array.from({ length: 7 }, (_, dayIndex) => historyDates[weekIndex * 7 + dayIndex])
+  );
+  const monthLabels = heatmapWeeks.map((week, index) => {
+    const monthDay = week.find((date) => date.getDate() === 1);
+    if (monthDay) return monthDay.toLocaleDateString("en", { month: "short" }).toUpperCase();
+    if (index === 0) return week[0].toLocaleDateString("en", { month: "short" }).toUpperCase();
+    return "";
   });
 
-  const activeGoals = goals.filter((g) => g.status === "active");
-  const goalRows = [...activeGoals].sort((a, b) => b.updated_at.localeCompare(a.updated_at)).slice(0, 4);
-  const goalAvg = goals.length ? Math.round(goals.reduce((s, g) => s + (g.progress || 0), 0) / goals.length) : null;
+  return <div className="dashboard-redesign min-h-screen space-y-4 bg-[#080d0f] text-[#f0f2e9] sm:space-y-5" style={{ "--dash-accent": CYAN } as React.CSSProperties}>
+    <style jsx global>{`
+      body:has(.dashboard-redesign) > div:not([data-rht-toaster]) { background: #080d0f !important; }
+      body:has(.dashboard-redesign) > [data-rht-toaster] { background: transparent !important; pointer-events: none; }
+      body:has(.dashboard-redesign) > [data-rht-toaster]:empty { z-index: 0 !important; }
+      body:has(.dashboard-redesign) header { background: rgba(8,13,15,.9) !important; border-color: rgba(255,255,255,.08) !important; }
+      body:has(.dashboard-redesign) header h1 { color: #f0f2e9 !important; }
+      body:has(.dashboard-redesign) header a,
+      body:has(.dashboard-redesign) header button { color: #9baab0 !important; }
+    `}</style>
+    <style jsx global>{`
+      .dashboard-redesign .dash-accent { color: ${CYAN}; }
+      .dashboard-redesign .dash-border { border-color: rgba(54,210,255,.22); }
+      .dashboard-redesign .dash-glow { box-shadow: 0 0 22px rgba(54,210,255,.08), inset 0 0 18px rgba(54,210,255,.025); }
+      .dashboard-redesign .dash-kicker { color: #9ceaff; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; font-weight: 600; }
+      .dashboard-redesign .dash-gridline { stroke: rgba(255,255,255,.08); }
+      .dashboard-redesign .dash-axis { fill: ${MUTED}; font-size: 10px; }
+      .dashboard-redesign .recharts-cartesian-axis-tick-value { fill: ${MUTED}; }
+    `}</style>
 
-  const trend = useMemo(() => {
-    return Array.from({ length: range }, (_, i) => {
-      const date = shift(now, i - (range - 1));
-      const key = iso(date);
-      const existing = tasks.filter((t) => localDay(t.created_at) <= key);
-      const done = existing.filter((t) => t.status === "completed" && localDay(t.updated_at) <= key).length;
-      return {
-        label: range === 7 ? DAY[date.getDay()] : date.toLocaleDateString("en", { month: "short", day: "numeric" }),
-        value: existing.length ? Math.round((done / existing.length) * 100) : null,
-      };
-    });
-  }, [tasks, range, now]);
-  const trendHasData = trend.some((p) => p.value !== null);
-
-  const dueToday = tasks.filter((t) => t.deadline && localDay(t.deadline) <= today && (t.status !== "completed" || localDay(t.deadline) === today));
-  const fallbackOpen = !dueToday.length;
-  const todayList = (fallbackOpen ? tasks.filter((t) => t.status !== "completed") : dueToday).slice(0, 6);
-  const todayDone = todayList.filter((t) => t.status === "completed").length;
-  const todayPct = todayList.length ? Math.round((todayDone / todayList.length) * 100) : 0;
-
-  const overallRows = [
-    { label: "Tasks", value: tasksTotal ? taskPct : null, opacity: 1 },
-    { label: "Habits", value: habitWeek, opacity: 0.6 },
-    { label: "Goals", value: goalAvg, opacity: 0.35 },
-  ];
-  const available = overallRows.filter((r) => r.value !== null) as { value: number }[];
-  const overall = available.length ? Math.round(available.reduce((s, r) => s + r.value, 0) / available.length) : null;
-
-  const activity = useMemo(() => {
-    const items: { at: string; text: string; icon: typeof Flame }[] = [];
-    for (const t of tasks) if (t.status === "completed") items.push({ at: t.updated_at, text: `Completed "${t.title}"`, icon: CheckSquare });
-    const names = new Map(habits.map((h) => [h.id, h.name]));
-    for (const l of logs) if (names.has(l.habit_id)) items.push({ at: l.created_at, text: `Logged "${names.get(l.habit_id)}"`, icon: Flame });
-    for (const g of goals) items.push({ at: g.updated_at, text: g.status === "completed" ? `Completed goal "${g.title}"` : `Updated goal "${g.title}" (${g.progress}%)`, icon: Target });
-    return items.sort((a, b) => b.at.localeCompare(a.at));
-  }, [tasks, habits, logs, goals]);
-  const activityShown = activity.slice(0, showAllActivity ? 15 : 5);
-
-  const axis = { fill: MUTED, fontSize: 10 };
-  const tip = { background: "#12191b", border: "1px solid rgba(54,210,255,.24)", borderRadius: 10, color: TEXT, fontSize: 12 };
-
-  return (
-    <div className="space-y-4 text-[#f0f2e9] sm:space-y-5">
-      <section className={`${card} relative overflow-hidden p-6 sm:p-8`}>
-        <HeroScene />
-        <div className="relative max-w-2xl">
-          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[.16em] text-[#9ceaff]">Your discipline dashboard</p>
-          <h1 className="text-[28px] font-extrabold uppercase leading-[1.05] tracking-tight sm:text-5xl">Discipline today,<br /><span style={{ color: ACCENT }}>freedom tomorrow.</span></h1>
-          <p className="mt-4 flex items-start gap-2 text-sm italic text-[#9baab0] sm:text-base"><span aria-hidden="true" className="text-2xl font-bold not-italic leading-none text-[#36d2ff]">&ldquo;</span>Consistency in the small things creates extraordinary results.</p>
+    <section className={`${panel("dash-border dash-glow")} relative overflow-hidden p-6 sm:p-8 lg:p-10`}>
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-2/3 bg-[radial-gradient(ellipse_at_80%_50%,rgba(54,210,255,.10),transparent_62%)]" />
+      <div className="relative max-w-3xl">
+        <p className="dash-kicker mb-3">Your discipline dashboard</p>
+        <h1 className="max-w-2xl text-4xl font-extrabold uppercase leading-[.98] tracking-tight text-[#f0f2e9] sm:text-5xl lg:text-6xl">Discipline today,<br /><span className="dash-accent">freedom</span> tomorrow.</h1>
+        <p className="mt-4 max-w-lg text-sm leading-relaxed text-[#9baab0] sm:text-base">Discipline is the bridge between <span className="text-[#9ceaff]">goals</span> and accomplishment.</p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <div className="rounded-xl border border-white/10 bg-black/30 px-4 py-3"><div className="text-xs text-[#8b9480]">Tasks completed</div><div className="mt-1 text-xl font-bold text-white">{tasksDone}<span className="ml-1 text-sm font-medium text-[#8b9480]">/ {tasks.length}</span></div></div>
+          <div className="rounded-xl border border-white/10 bg-black/30 px-4 py-3"><div className="text-xs text-[#8b9480]">Habit consistency this week</div><div className="mt-1 text-xl font-bold text-white">{weekPercent}<span className="ml-1 text-sm font-medium text-[#8b9480]">%</span></div></div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4 sm:gap-4">
-        <div className={`${card} flex items-center justify-between gap-3 p-4`}>
-          <div className="min-w-0"><p className="text-xs text-[#9baab0]">Tasks Completed</p><p className="mt-1 text-2xl font-bold">{tasksDone}<span className="text-base font-medium text-[#86969c]"> / {tasksTotal}</span></p></div>
-          <Ring value={taskPct} />
+    <section className="grid gap-4 lg:grid-cols-3">
+      <div className={`${panel("dash-border p-4 sm:p-5 lg:col-span-2")} dash-glow`}>
+        <div className="mb-3 flex items-center justify-between gap-3"><div><p className="dash-kicker">Overall progress</p><p className="mt-1 text-xs text-[#86969c]">Habit consistency · Monday to Sunday</p></div><div className="text-right"><span className="text-lg font-bold dash-accent">{monthlyChange >= 0 ? "+" : ""}{monthlyChange}%</span><p className="text-[10px] text-[#86969c]">vs last month</p></div></div>
+        <div className="h-48 sm:h-56">
+          <ResponsiveContainer width="100%" height="100%"><AreaChart data={overallChart} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+            <defs><linearGradient id="dashboardProgressFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={CYAN} stopOpacity={0.24} /><stop offset="100%" stopColor={CYAN} stopOpacity={0.015} /></linearGradient></defs>
+            <CartesianGrid vertical={false} stroke="rgba(255,255,255,.07)" />
+            <XAxis dataKey="day" tick={{ fill: MUTED, fontSize: 10 }} tickLine={false} axisLine={false} />
+            <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={(value) => `${value}%`} tick={{ fill: MUTED, fontSize: 10 }} tickLine={false} axisLine={false} width={56} />
+            <Tooltip formatter={(value) => [`${value}%`, "Completion"]} labelFormatter={(label, payload) => payload?.[0]?.payload?.date ? `${label} ${payload[0].payload.date}` : label} contentStyle={{ background: "#12191b", border: "1px solid rgba(54,210,255,.24)", borderRadius: 10, color: "#f0f2e9", fontSize: 12 }} labelStyle={{ color: CYAN }} />
+            <Area isAnimationActive={false} type="monotone" dataKey="value" name="Completion" stroke={CYAN} strokeWidth={3} fill="url(#dashboardProgressFill)" dot={{ r: 3, fill: CYAN, stroke: "#101416", strokeWidth: 2 }} activeDot={{ r: 5, fill: CYAN, stroke: "#101416", strokeWidth: 2 }} />
+          </AreaChart></ResponsiveContainer>
         </div>
-        <div className={`${card} p-4`}>
-          <p className="text-xs text-[#9baab0]">Habit Consistency</p>
-          <p className="mt-1 text-2xl font-bold">{habitWeek === null ? "--" : `${habitWeek}%`}</p>
-          <p className="mt-1 text-[11px] text-[#86969c]">{habitDelta === null ? "No habit data yet" : <><span className="font-semibold text-[#36d2ff]">{habitDelta >= 0 ? "+" : ""}{habitDelta}%</span> vs last week</>}</p>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+        <div className={`${panel("dash-border p-5")} flex items-center justify-between gap-4`}>
+          <div><p className="dash-kicker">Current streak</p><div className="mt-2 flex items-baseline gap-2"><span className="text-5xl font-extrabold text-[#9ceaff]">{currentStreak}</span><span className="text-sm font-semibold uppercase tracking-wider text-[#9baab0]">days</span></div><p className="mt-1 text-xs text-[#86969c]">from consecutive habit logs</p></div><Flame className="h-16 w-16 shrink-0 text-[#36d2ff] drop-shadow-[0_0_14px_rgba(54,210,255,.45)]" strokeWidth={1.5} />
         </div>
-        <div className={`${card} flex items-center justify-between gap-3 p-4`}>
-          <div><p className="text-xs text-[#9baab0]">Current Streak</p><p className="mt-1 text-2xl font-bold">{currentStreak}<span className="text-base font-medium text-[#86969c]"> {currentStreak === 1 ? "Day" : "Days"}</span></p></div>
-          <Flame className="h-9 w-9 shrink-0 text-[#36d2ff]" strokeWidth={1.5} />
+        <div className={`${panel("dash-border p-5")} flex items-center justify-between gap-4`}>
+          <div><p className="dash-kicker">Longest streak</p><div className="mt-2 flex items-baseline gap-2"><span className="text-4xl font-extrabold text-[#9ceaff]">{longestStreak}</span><span className="text-sm font-semibold uppercase tracking-wider text-[#9baab0]">days</span></div><p className="mt-1 text-xs text-[#86969c]">best consecutive run recorded</p></div><Trophy className="h-11 w-11 shrink-0 text-[#36d2ff]" strokeWidth={1.6} />
         </div>
-        <div className={`${card} flex items-center justify-between gap-3 p-4`}>
-          <div><p className="text-xs text-[#9baab0]">Longest Streak</p><p className="mt-1 text-2xl font-bold">{longestStreak}<span className="text-base font-medium text-[#86969c]"> {longestStreak === 1 ? "Day" : "Days"}</span></p></div>
-          <Trophy className="h-9 w-9 shrink-0 text-[#36d2ff]" strokeWidth={1.5} />
-        </div>
-      </section>
+      </div>
+    </section>
 
-      <section className="grid gap-4 lg:grid-cols-3">
-        <div className={`${card} flex flex-col p-5`}>
-          <CardHead icon={Target} title="Goal Progress" sub="Your active goals" right={<Link href="/goals" className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-[#36d2ff] hover:text-[#9ceaff]">View Goals <ArrowUpRight className="h-3 w-3" /></Link>} />
-          {goalRows.length ? (
-            <ul className="space-y-4">
-              {goalRows.map((g) => (
-                <li key={g.id}>
-                  <div className="mb-1.5 flex items-center justify-between gap-3 text-xs"><span className="truncate text-[#dce1d5]">{g.title}</span><span className="shrink-0 font-semibold text-[#f0f2e9]">{g.progress}%</span></div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.08]"><div className="h-full rounded-full bg-[#36d2ff]" style={{ width: `${Math.max(0, Math.min(100, g.progress))}%` }} /></div>
-                </li>
-              ))}
-            </ul>
-          ) : <Empty text={loaded ? "No active goals yet. Create one in Goals." : "Loading..."} />}
-        </div>
+    <section className={`${panel("dash-border p-4 sm:p-5")}`}>
+      <div className="mb-4 flex items-end justify-between gap-3"><div><p className="dash-kicker">Modules</p><h2 className="mt-1 text-xl font-bold text-[#ecf0e5]">Your habits, in motion</h2></div><a href="/habits" className="inline-flex items-center gap-1 text-xs font-semibold text-[#36d2ff] hover:text-[#9ceaff]">All habits <ArrowUpRight className="h-3.5 w-3.5" /></a></div>
+      {uniqueHabits.length ? <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {uniqueHabits.map((habit) => {
+          const days = logsByHabit.get(habit.id) ?? new Set<string>();
+          const complete = weekDays.filter((day) => days.has(day)).length;
+          const ratio = Math.round(complete / 7 * 100);
+          const Icon = getHabitIcon(habit);
+          return <article key={habit.id} className="rounded-xl border border-white/[0.08] bg-[#0b0f11] p-4">
+            <div className="flex items-center justify-between gap-2"><div className="flex min-w-0 items-center gap-2"><Icon className="h-4 w-4 shrink-0 text-[#36d2ff]" /><h3 className="truncate text-xs font-semibold uppercase tracking-wide text-[#dce1d5]">{habit.name}</h3></div><span className="flex shrink-0 items-center gap-1 text-xs font-bold text-[#36d2ff]"><Flame className="h-3.5 w-3.5" />{habit.streak}</span></div>
+            <div className="mt-4 flex items-center justify-center"><Ring value={ratio} /></div>
+            <p className="mt-2 text-center text-[10px] font-semibold uppercase tracking-[.14em] text-[#9baab0]">{complete} / 7 days</p>
+            <div className="mt-3 grid grid-cols-7 gap-1.5">{dates.map((day, i) => {
+              const isDone = days.has(iso(day));
+              return <div key={iso(day)} className="flex flex-col items-center gap-1"><span className="text-[8px] text-[#74848a]">{SHORT_DAYS[i]}</span><span className={`h-4 w-full rounded-sm ${isDone ? "bg-[#36d2ff] shadow-[0_0_8px_rgba(54,210,255,.25)]" : "bg-white/[0.07]"}`} aria-label={`${habit.name}, ${DAY_NAMES[i]} ${isDone ? "completed" : "not completed"}`} /></div>;
+            })}</div>
+            <p className="mt-3 truncate text-[10px] text-[#87969a]">{habit.frequency} · {habit.description || "Keep showing up"}</p>
+          </article>;
+        })}
+      </div> : <p className="rounded-xl border border-dashed border-white/10 px-4 py-8 text-center text-sm text-[#86969c]">No habits yet. Add one to start building your streak.</p>}
+    </section>
 
-        <div className={`${card} flex flex-col p-5`}>
-          <CardHead icon={Activity} title="Weekly Habit Consistency" sub="Completion rate, last 7 days" />
-          {uniqueHabits.length ? (
-            <div className="h-[200px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={weekBars} margin={{ top: 18, right: 4, left: -6, bottom: 0 }} barCategoryGap="22%">
-                  <CartesianGrid vertical={false} stroke="rgba(255,255,255,.07)" />
-                  <XAxis dataKey="day" tick={axis} tickLine={false} axisLine={false} />
-                  <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={(v) => `${v}%`} tick={axis} tickLine={false} axisLine={false} width={40} />
-                  <Tooltip cursor={{ fill: "rgba(255,255,255,.04)" }} formatter={(v, _n, item) => [`${v}% (${item.payload.done} / ${uniqueHabits.length} habits)`, "Completion"]} contentStyle={tip} />
-                  <Bar dataKey="value" fill={ACCENT} radius={[5, 5, 0, 0]} maxBarSize={30} isAnimationActive={false}>
-                    <LabelList dataKey="value" position="top" formatter={(v) => `${v}%`} fill={ACCENT_SOFT} fontSize={9} />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : <Empty text={loaded ? "Add a habit to see your weekly consistency." : "Loading..."} />}
-        </div>
-
-        <div className={`${card} flex flex-col p-5`}>
-          <CardHead icon={CheckSquare} title="Today's Tasks" sub={todayList.length ? (fallbackOpen ? "Nothing due today, showing open tasks" : `${todayDone} of ${todayList.length} completed`) : undefined} right={todayList.length ? <span className="text-xs font-semibold text-[#9baab0]">{todayPct}%</span> : undefined} />
-          {todayList.length ? (
-            <>
-              <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-white/[0.08]"><div className="h-full rounded-full bg-[#36d2ff]" style={{ width: `${todayPct}%` }} /></div>
-              <ul className="divide-y divide-white/[0.06]">
-                {todayList.map((t) => {
-                  const done = t.status === "completed";
-                  return (
-                    <li key={t.id}>
-                      <button onClick={() => toggleTask(t)} aria-pressed={done} className="flex w-full items-center gap-3 py-2 text-left text-xs">
-                        <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${done ? "border-[#36d2ff] bg-[#36d2ff] text-[#05080B]" : "border-white/25"}`}>{done && <svg viewBox="0 0 12 12" className="h-3 w-3"><path d="M2.5 6.5l2.2 2.2L9.5 3.8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>}</span>
-                        <span className={`truncate ${done ? "text-[#74848a] line-through" : "text-[#dce1d5]"}`}>{t.title}</span>
-                      </button>
-                    </li>
-                  );
+    <section className={`${panel("dash-border p-4 sm:p-5")}`}>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:gap-5">
+        <div className="min-w-0"><div className="mb-2 flex items-end justify-between gap-3"><p className="dash-kicker">Consistency</p><span className="shrink-0 text-[9px] text-[#758c94] sm:text-[10px]">LESS <span className="mx-1 text-[#36d2ff]">■ ▪ ■ ▪ ■</span> MORE</span></div>
+          <div className="flex items-start gap-1.5 sm:gap-2">
+            <div className="flex shrink-0 flex-col gap-y-[3px] pt-[17px] text-[7px] font-medium leading-3 tracking-wide text-[#84949a] sm:gap-y-1 sm:pt-5 sm:text-[8px]">{["MON", "WED", "FRI"].map((day) => <span key={day} className="h-3 leading-3 sm:h-[18px] sm:leading-[18px]">{day}</span>)}</div>
+            <div className="min-w-0 overflow-x-auto pb-1">
+              <div className="grid w-max grid-flow-col grid-rows-[14px_repeat(7,12px)] auto-cols-[12px] gap-x-[3px] gap-y-[3px] pb-1 sm:grid-rows-[16px_repeat(7,18px)] sm:auto-cols-[18px] sm:gap-x-1 sm:gap-y-1" aria-label="Habit consistency heatmap, last 12 weeks">
+                {heatmapWeeks.map((week, weekIndex) => {
+                  const monthLabel = monthLabels[weekIndex];
+                  return <div key={`week-${weekIndex}`} className="contents">
+                    <span className="h-3 text-[7px] leading-3 text-[#84949a] sm:text-[8px]">{monthLabel}</span>
+                    {week.map((day) => {
+                      const amount = logs.filter((log) => log.completed_date.slice(0, 10) === iso(day)).length;
+                      const isFuture = day > now;
+                      const shade = amount === 0 ? "bg-white/[0.06]" : amount === 1 ? "bg-[#16718e]" : amount === 2 ? "bg-[#229fc1]" : "bg-[#36d2ff] shadow-[0_0_8px_rgba(54,210,255,.34)]";
+                      return <span key={iso(day)} title={`${iso(day)} · ${amount} habit ${amount === 1 ? "log" : "logs"}`} className={`h-3 w-3 rounded-[3px] ${isFuture ? "bg-transparent" : shade} sm:h-[18px] sm:w-[18px] sm:rounded-[4px]`} />;
+                    })}
+                  </div>;
                 })}
-              </ul>
-            </>
-          ) : <Empty text={loaded ? "No open tasks. Add one in Tasks." : "Loading..."} />}
-        </div>
-      </section>
-
-      <section className="grid gap-4 lg:grid-cols-3">
-        <div className={`${card} flex flex-col p-5`}>
-          <CardHead icon={Zap} title="Productivity Trend" sub="Share of tasks completed over time" right={
-            <div className="flex shrink-0 rounded-lg border border-white/10 bg-[#070A14] p-0.5">
-              {([7, 30, 90] as const).map((r) => <button key={r} onClick={() => setRange(r)} aria-pressed={range === r} className={`rounded-md px-2 py-1 text-[10px] font-semibold ${range === r ? "bg-[#36d2ff] text-[#05080B]" : "text-[#9baab0] hover:text-white"}`}>{r}D</button>)}
+              </div>
             </div>
-          } />
-          {trendHasData ? (
-            <div className="h-[200px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={trend} margin={{ top: 8, right: 8, left: -6, bottom: 0 }}>
-                  <defs><linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={ACCENT} stopOpacity=".28" /><stop offset="1" stopColor={ACCENT} stopOpacity="0" /></linearGradient></defs>
-                  <CartesianGrid vertical={false} stroke="rgba(255,255,255,.07)" />
-                  <XAxis dataKey="label" tick={axis} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={24} />
-                  <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={(v) => `${v}%`} tick={axis} tickLine={false} axisLine={false} width={40} />
-                  <Tooltip formatter={(v) => [`${v}%`, "Tasks completed"]} contentStyle={tip} />
-                  <Area type="monotone" dataKey="value" stroke={ACCENT} strokeWidth={2} fill="url(#trendFill)" dot={range === 7 ? { r: 3, fill: ACCENT, stroke: "#0F1424" } : false} connectNulls={false} isAnimationActive={false} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          ) : <Empty text={loaded ? "Create tasks to see your completion trend." : "Loading..."} />}
-        </div>
-
-        <div className={`${card} flex flex-col p-5`}>
-          <CardHead icon={Flag} title="Overall Progress" sub="Tasks, habits and goals" />
-          <div className="flex flex-1 flex-wrap items-center justify-center gap-5">
-            <Donut rows={overallRows} center={overall} />
-            <ul className="space-y-3 text-xs">
-              {overallRows.map((r) => (
-                <li key={r.label} className="flex items-center gap-3"><span className="h-2.5 w-2.5 rounded-sm bg-[#36d2ff]" style={{ opacity: r.opacity }} /><span className="w-12 text-[#9baab0]">{r.label}</span><span className="font-semibold">{r.value === null ? "--" : `${r.value}%`}</span></li>
-              ))}
-            </ul>
           </div>
         </div>
-
-        <div className={`${card} flex flex-col p-5`}>
-          <CardHead icon={Zap} title="Recent Activity" right={activity.length > 5 ? <button onClick={() => setShowAllActivity((v) => !v)} className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-[#36d2ff] hover:text-[#9ceaff]">{showAllActivity ? "Show less" : "View All"} <ArrowUpRight className="h-3 w-3" /></button> : undefined} />
-          {activityShown.length ? (
-            <ul className="space-y-3">
-              {activityShown.map((a, i) => {
-                const Ic = a.icon;
-                return (
-                  <li key={`${a.at}-${i}`} className="flex items-center gap-3 text-xs">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/[0.05] text-[#36d2ff]"><Ic className="h-3.5 w-3.5" strokeWidth={1.75} /></span>
-                    <span className="min-w-0 flex-1 truncate text-[#dce1d5]">{a.text}</span>
-                    <span className="shrink-0 text-[#74848a]">{ago(a.at, now)}</span>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : <Empty text={loaded ? "Nothing yet. Complete a task or log a habit." : "Loading..."} />}
+        <div className="flex flex-col justify-center gap-4 border-l border-white/[0.08] py-1 pl-3 sm:gap-6 sm:pl-5">
+          <div><p className="text-[9px] font-medium uppercase tracking-wide text-[#84949a] sm:text-[10px]">This Month</p><p className="mt-1 text-2xl font-extrabold leading-none text-[#36d2ff] sm:text-3xl">{monthlyConsistency}%</p><p className="mt-1 text-[8px] uppercase text-[#74848a] sm:text-[9px]">Consistency</p></div>
+          <div><p className="text-[9px] font-medium uppercase tracking-wide text-[#84949a] sm:text-[10px]">Best Month</p><p className="mt-1 text-2xl font-extrabold leading-none text-[#dce1d5] sm:text-3xl">{bestMonthRate}%</p><p className="mt-1 text-[8px] uppercase text-[#74848a] sm:text-[9px]">Consistency</p></div>
         </div>
-      </section>
+      </div>
+    </section>
 
+    <section className="grid gap-4 lg:grid-cols-2">
+      <div className={`${panel("dash-border p-4 sm:p-5")}`}>
+        <div className="mb-4 flex items-center justify-between"><div><p className="dash-kicker">Streaks</p><p className="mt-1 text-xs text-[#86969c]">Current runs by habit</p></div><Flame className="h-5 w-5 text-[#36d2ff]" /></div>
+        <ul className="space-y-3">{[...uniqueHabits].sort((a, b) => b.streak - a.streak).map((habit) => <li key={habit.id} className="flex items-center justify-between gap-3 border-b border-white/[0.06] pb-2 last:border-0"><span className="flex min-w-0 items-center gap-2 truncate text-sm text-[#d9ded2]"><Flame className="h-4 w-4 shrink-0 text-[#36d2ff]" />{habit.name}</span><span className="shrink-0 text-xs font-bold text-[#36d2ff]">{habit.streak} days</span></li>)}{!uniqueHabits.length && <li className="py-4 text-center text-sm text-[#86969c]">No streaks yet. Log a habit to start one.</li>}</ul>
+      </div>
+      <div className={`${panel("dash-border p-4 sm:p-5")}`}>
+        <div className="mb-3 flex items-center justify-between gap-3"><div><p className="dash-kicker">Weekly progress</p><p className="mt-1 text-xs text-[#86969c]">Habit completion by day</p></div><label className="relative"><span className="sr-only">Select week</span><select value={weekSelection} onChange={(event) => setWeekSelection(event.target.value as "this" | "last")} className="appearance-none rounded-lg border border-white/10 bg-[#101416] py-1.5 pl-3 pr-7 text-[10px] font-medium text-[#9baab0] focus:outline-none focus:ring-1 focus:ring-[#36d2ff]"><option value="this">This Week</option><option value="last">Last Week</option></select><span aria-hidden="true" className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-[#9baab0]">⌄</span></label></div>
+        <div className="h-48"><ResponsiveContainer width="100%" height="100%"><BarChart data={weekChart} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} barCategoryGap="20%">
+          <CartesianGrid vertical={false} stroke="rgba(255,255,255,.07)" />
+          <XAxis dataKey="day" tick={{ fill: MUTED, fontSize: 10 }} tickLine={false} axisLine={false} />
+          <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={(value) => `${value}%`} tick={{ fill: MUTED, fontSize: 10 }} tickLine={false} axisLine={false} width={56} />
+          <Tooltip formatter={(value, _name, item) => [`${value}%${item.payload.completed !== undefined ? ` (${item.payload.completed} / ${uniqueHabits.length} habits)` : ""}`, "Completion"]} contentStyle={{ background: "#12191b", border: "1px solid rgba(54,210,255,.24)", borderRadius: 10, color: "#f0f2e9", fontSize: 12 }} />
+          <Bar dataKey="value" name="Completion" fill={CYAN} radius={[6, 6, 0, 0]} maxBarSize={30} isAnimationActive={false} />
+        </BarChart></ResponsiveContainer></div>
+      </div>
+    </section>
 
-      {uniqueHabits.length > 0 && (
-        <section>
-          <div className="mb-3 flex items-center justify-between"><h2 className="text-sm font-semibold">Your habits</h2><Link href="/habits" className="inline-flex items-center gap-1 text-xs font-semibold text-[#36d2ff] hover:text-[#9ceaff]">All habits <ArrowUpRight className="h-3 w-3" /></Link></div>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {uniqueHabits.map((h) => {
-              const Ic = getHabitIcon(h);
-              return (
-                <article key={h.id} className={`${card} p-4`}>
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex min-w-0 items-center gap-2"><Ic className="h-4 w-4 shrink-0 text-[#36d2ff]" strokeWidth={1.75} /><h3 className="truncate text-xs font-semibold uppercase tracking-wide text-[#dce1d5]">{h.name}</h3></div>
-                    <span className="flex shrink-0 items-center gap-1 text-xs font-bold text-[#36d2ff]"><Flame className="h-3.5 w-3.5" />{h.streak}</span>
-                  </div>
-                  <div className="mt-3 grid grid-cols-7 gap-1">
-                    {Array.from({ length: 7 }, (_, i) => { const d = shift(now, i - 6); const on = logDays.get(h.id)?.has(iso(d)); return <div key={i} className="flex flex-col items-center gap-1"><span className="text-[8px] text-[#74848a]">{DAY[d.getDay()][0]}</span><span aria-label={`${h.name}, ${DAY[d.getDay()]} ${on ? "completed" : "not completed"}`} className={`h-4 w-full rounded-sm ${on ? "bg-[#36d2ff]" : "bg-white/[0.07]"}`} /></div>; })}
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-      )}
-    </div>
-  );
+    <footer className={`${panel("dash-border flex flex-col items-center gap-2 px-5 py-4 text-center sm:flex-row sm:justify-between")}`}><p className="text-[10px] font-semibold uppercase tracking-[.28em] text-[#9aabb0]">Discipline is choosing what you want most</p><p className="text-xs italic text-[#b1c6ce]">“Small steps every day add up to big change.”</p></footer>
+  </div>;
 }
