@@ -12,7 +12,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { StatCardSkeleton } from "@/components/ui/Skeleton";
 import type { Habit, HabitLog } from "@/types";
-import { format, startOfWeek, addDays, isToday, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, isAfter, startOfDay, getISOWeek } from "date-fns";
+import { format, startOfWeek, addDays, isToday, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, isAfter, isBefore, startOfDay, getISOWeek } from "date-fns";
 import toast from "react-hot-toast";
 import { Flame } from "lucide-react";
 
@@ -38,6 +38,7 @@ export default function HabitsPage() {
   const [frequency, setFrequency] = useState("daily");
   const [color, setColor] = useState("#00B4F0");
   const [icon, setIcon] = useState<string | null>(null);
+  const [goalDays, setGoalDays] = useState("");
   const [view, setView] = useState<"month" | "week">("month");
   const [monthAnchor, setMonthAnchor] = useState(() => startOfMonth(new Date()));
 
@@ -47,8 +48,8 @@ export default function HabitsPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const rangeStart = view === "month" ? startOfMonth(monthAnchor) : weekStart;
-      const rangeEnd = view === "month" ? endOfMonth(monthAnchor) : addDays(weekStart, 6);
+      const rangeStart = view === "month" ? startOfMonth(monthAnchor) : (isBefore(startOfMonth(new Date()), weekStart) ? startOfMonth(new Date()) : weekStart);
+      const rangeEnd = view === "month" ? endOfMonth(monthAnchor) : (isAfter(endOfMonth(new Date()), addDays(weekStart, 6)) ? endOfMonth(new Date()) : addDays(weekStart, 6));
       const startDate = format(rangeStart, "yyyy-MM-dd");
       const endDate = format(rangeEnd, "yyyy-MM-dd");
       const [habitsRes, logsRes] = await Promise.all([
@@ -88,25 +89,28 @@ export default function HabitsPage() {
   };
 
   const openCreateModal = () => {
-    setEditingHabit(null); setName(""); setDescription(""); setFrequency("daily"); setColor("#00B4F0"); setIcon(null);
+    setEditingHabit(null); setName(""); setDescription(""); setFrequency("daily"); setColor("#00B4F0"); setIcon(null); setGoalDays("");
     setModalOpen(true);
   };
 
   const openEditModal = (habit: Habit) => {
     setEditingHabit(habit); setName(habit.name); setDescription(habit.description || "");
-    setFrequency(habit.frequency); setColor(habit.color); setIcon(habit.icon ?? null);
+    setFrequency(habit.frequency); setColor(habit.color); setIcon(habit.icon ?? null); setGoalDays(habit.goal_days ? String(habit.goal_days) : "");
     setModalOpen(true);
   };
 
   const handleSave = async () => {
     if (!name.trim()) return toast.error("Name is required");
+    const goalNum = goalDays.trim() === "" ? null : Number(goalDays);
+    if (goalNum !== null && (!Number.isInteger(goalNum) || goalNum < 1 || goalNum > 31)) return toast.error("Goal must be a whole number from 1 to 31");
     setSaving(true);
     try {
-      const body = { name, description: description || null, frequency, color, icon };
+      const body = { name, description: description || null, frequency, color, icon, goal_days: goalNum };
       const res = editingHabit
         ? await fetch(`/api/habits/${editingHabit.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
         : await fetch("/api/habits", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       if (res.ok) { toast.success(editingHabit ? "Habit updated" : "Habit created"); setModalOpen(false); fetchData(); }
+      else { const err = await res.json().catch(() => null); toast.error(err?.error?.includes("goal_days") ? "Goal column missing in database. Run the goal_days migration." : "Failed to save"); }
     } catch { toast.error("Failed to save"); }
     finally { setSaving(false); }
   };
@@ -121,6 +125,7 @@ export default function HabitsPage() {
 
   const monthDays = eachDayOfInterval({ start: startOfMonth(monthAnchor), end: endOfMonth(monthAnchor) });
   const isFuture = (d: Date) => isAfter(startOfDay(d), startOfDay(new Date()));
+  const weekMonthCount = (habitId: string) => logs.filter((l) => l.habit_id === habitId && l.completed_date.startsWith(format(new Date(), "yyyy-MM"))).length;
   const monthCount = (habitId: string) => monthDays.filter((d) => isLogged(habitId, d)).length;
 
   if (loading && habits.length === 0) {
@@ -173,20 +178,21 @@ export default function HabitsPage() {
             <button aria-label="Next month" onClick={() => setMonthAnchor(addMonths(monthAnchor, 1))} className="rounded-lg p-1.5 text-[#9baab0] hover:bg-white/5 hover:text-white"><ChevronRight className="h-4 w-4" /></button>
           </div>
           <div className="overflow-x-auto">
-            <table className="border-separate border-spacing-0 text-[#dce1d5]" aria-label="Habit matrix for the month">
+            <table className="w-full min-w-[760px] table-fixed lg:min-w-0 border-separate border-spacing-0 text-[#dce1d5]" aria-label="Habit matrix for the month">
+              <colgroup><col className="w-[104px] sm:w-[140px]" />{monthDays.map((d) => <col key={d.toISOString()} />)}<col className="w-[72px]" /><col className="w-[48px]" /></colgroup>
               <thead>
                 <tr>
-                  <th className="sticky left-0 z-20 min-w-[140px] bg-[#070A14] pb-1 pr-3 text-left text-[10px] font-medium uppercase tracking-wide text-[#74848a]">Habit</th>
+                  <th className="sticky left-0 z-20 bg-[#070A14] pb-1 pr-2 text-left text-[10px] font-medium uppercase tracking-wide text-[#74848a]">Habit</th>
                   {monthDays.map((d, i) => {
                     const newWeek = i > 0 && d.getDay() === 1;
                     return (
-                      <th key={d.toISOString()} className={`min-w-[26px] pb-1 text-center text-[9px] font-medium ${newWeek ? "border-l border-white/10" : ""} ${isToday(d) ? "text-[#36d2ff]" : "text-[#74848a]"}`} title={`Week ${getISOWeek(d)}`}>
+                      <th key={d.toISOString()} className={`pb-1 text-center text-[9px] font-medium ${newWeek ? "border-l border-white/10" : ""} ${isToday(d) ? "text-[#36d2ff]" : "text-[#74848a]"}`} title={`Week ${getISOWeek(d)}`}>
                         <div>{format(d, "EEEEE")}</div>
-                        <div className={`mx-auto mt-0.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px] ${isToday(d) ? "bg-[#36d2ff] font-bold text-[#05080B]" : ""}`}>{format(d, "d")}</div>
+                        <div className={`mx-auto mt-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[8px] xl:h-5 xl:w-5 xl:text-[10px] ${isToday(d) ? "bg-[#36d2ff] font-bold text-[#05080B]" : ""}`}>{format(d, "d")}</div>
                       </th>
                     );
                   })}
-                  <th className="pb-1 pl-3 text-right text-[10px] font-medium uppercase tracking-wide text-[#74848a]">Month</th>
+                  <th className="pb-1 pl-1 text-right text-[10px] font-medium uppercase tracking-wide text-[#74848a]">Month</th>
                   <th className="pb-1 pl-2"></th>
                 </tr>
               </thead>
@@ -195,8 +201,8 @@ export default function HabitsPage() {
                   const Ic = getHabitIcon(habit);
                   return (
                     <tr key={habit.id} className="group">
-                      <td className="sticky left-0 z-10 border-t border-white/[0.06] bg-[#070A14] py-1.5 pr-3">
-                        <div className="flex items-center gap-2"><Ic className="h-4 w-4 shrink-0 text-[#36d2ff]" strokeWidth={1.75} /><span className="max-w-[110px] truncate text-xs font-medium text-[#dce1d5]">{habit.name}</span></div>
+                      <td className="sticky left-0 z-10 border-t border-white/[0.06] bg-[#070A14] py-1.5 pr-2">
+                        <div className="flex items-center gap-2"><Ic className="h-4 w-4 shrink-0 text-[#36d2ff]" strokeWidth={1.75} /><div className="min-w-0"><span className="block max-w-[110px] truncate text-xs font-medium text-[#dce1d5]">{habit.name}</span>{habit.goal_days ? <span className="block text-[10px] font-semibold text-[#36d2ff] sm:hidden">{monthCount(habit.id)}/{habit.goal_days} days</span> : null}</div></div>
                       </td>
                       {monthDays.map((d, i) => {
                         const logged = isLogged(habit.id, d);
@@ -207,16 +213,16 @@ export default function HabitsPage() {
                             <button
                               disabled={future} onClick={() => toggleLog(habit.id, d)}
                               aria-label={`${habit.name}, ${format(d, "MMM d")}, ${logged ? "completed" : "not completed"}`}
-                              className={`mx-auto flex h-5 w-5 items-center justify-center rounded-[5px] transition-colors ${logged ? "bg-[#36d2ff] text-[#05080B] shadow-[0_0_8px_rgba(54,210,255,.3)]" : "bg-white/[0.06]"} ${future ? "cursor-not-allowed opacity-30" : !logged ? "hover:bg-white/[0.14]" : ""}`}
+                              className={`mx-auto flex aspect-square w-[88%] max-w-[22px] items-center justify-center rounded-[4px] transition-colors ${logged ? "bg-[#36d2ff] text-[#05080B] shadow-[0_0_8px_rgba(54,210,255,.3)]" : "bg-white/[0.06]"} ${future ? "cursor-not-allowed opacity-30" : !logged ? "hover:bg-white/[0.14]" : ""}`}
                             >
-                              {logged && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+                              {logged && <Check className="h-[70%] w-[70%]" strokeWidth={3} />}
                             </button>
                           </td>
                         );
                       })}
-                      <td className="border-t border-white/[0.06] py-1.5 pl-3 text-right text-xs font-bold text-[#36d2ff]">{monthCount(habit.id)}/{monthDays.length}</td>
+                      <td className="border-t border-white/[0.06] py-1.5 pl-1 text-right">{(() => { const done = monthCount(habit.id); const goal = habit.goal_days; return goal ? (<p className="text-xs font-bold text-[#36d2ff]" title={`${done} of ${goal} days goal`}>{done}/{goal} days</p>) : <p className="text-xs font-bold text-[#36d2ff]">{done}/{monthDays.length}</p>; })()}</td>
                       <td className="border-t border-white/[0.06] py-1.5 pl-2">
-                        <div className="flex items-center gap-0.5">
+                        <div className="flex items-center justify-end gap-0">
                           <button aria-label="Edit habit" onClick={() => openEditModal(habit)} className="rounded p-1 text-[#74848a] hover:text-[#36d2ff]"><Edit2 className="h-3.5 w-3.5" /></button>
                           <button aria-label="Delete habit" onClick={() => setDeleteHabit(habit)} className="rounded p-1 text-[#74848a] hover:text-red-400"><Trash2 className="h-3.5 w-3.5" /></button>
                         </div>
@@ -254,7 +260,7 @@ export default function HabitsPage() {
                         <Ic className="h-5 w-5 shrink-0 text-[#36d2ff]" strokeWidth={1.75} />
                         <div>
                           <p className="text-sm font-medium text-[#dce1d5]">{habit.name}</p>
-                          <p className="text-xs text-[#74848a]">{habit.frequency}</p>
+                          <p className="text-xs text-[#74848a]">{habit.frequency}{habit.goal_days ? ` · ${weekMonthCount(habit.id)}/${habit.goal_days} days this month` : ""}</p>
                         </div>
                       </div>
                     </td>
@@ -292,6 +298,7 @@ export default function HabitsPage() {
           <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Read 30 minutes" required />
           <Textarea label="Description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional description" />
           <Select label="Frequency" options={freqOptions} value={frequency} onChange={(e) => setFrequency(e.target.value)} />
+          <Input label="Goal (days this month)" type="number" inputMode="numeric" min={1} max={31} value={goalDays} onChange={(e) => setGoalDays(e.target.value)} placeholder="e.g., 20" helperText="Optional. How many days this month you want to complete this habit." />
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Color</label>
             <div className="flex gap-2">
