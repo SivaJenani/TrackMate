@@ -16,7 +16,7 @@ export async function getHabits() {
 }
 
 export async function createHabit(data: {
-  name: string; description?: string; frequency?: string; color?: string; icon?: string | null;
+  name: string; description?: string; frequency?: string; color?: string; icon?: string | null; goal_days?: number | null;
 }) {
   if (isAuthFrozen()) {
     const store = getDemoStore();
@@ -29,6 +29,7 @@ export async function createHabit(data: {
       frequency: (data.frequency || "daily") as HabitFrequency,
       color: data.color || "#00B4F0",
       icon: data.icon ?? null,
+      goal_days: data.goal_days ?? null,
       streak: 0,
       created_at: now,
       updated_at: now,
