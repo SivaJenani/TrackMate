@@ -41,11 +41,11 @@ body {
 
 /* Dark theme for the signed-in app shell: remaps the light utility classes used by shared components and pages. */
 .app-dark { color-scheme: dark; color: #ecf0e5; }
-.app-dark ::-webkit-scrollbar-thumb { background: #2a3438; }
+.app-dark ::-webkit-scrollbar-thumb { background: #2a3550; }
 .app-dark .bg-white,
-.app-dark [class~="bg-white"] { background-color: #0d1215; }
-.app-dark [class~="bg-gray-50"], .app-dark [class~="bg-gray-100"], .app-dark [class~="hover:bg-gray-100"]:hover, .app-dark [class~="hover:bg-gray-50"]:hover { background-color: #161c1f; }
-.app-dark [class~="bg-gray-200"] { background-color: #232b2f; }
+.app-dark [class~="bg-white"] { background-color: #0F1424; }
+.app-dark [class~="bg-gray-50"], .app-dark [class~="bg-gray-100"], .app-dark [class~="hover:bg-gray-100"]:hover, .app-dark [class~="hover:bg-gray-50"]:hover { background-color: #151C30; }
+.app-dark [class~="bg-gray-200"] { background-color: #1E2740; }
 .app-dark [class~="bg-red-50"] { background-color: rgba(239,68,68,.12); }
 .app-dark [class~="bg-red-100"] { background-color: rgba(239,68,68,.18); }
 .app-dark [class~="bg-green-100"] { background-color: rgba(16,185,129,.18); }
@@ -61,4 +61,4 @@ body {
 .app-dark [class~="text-amber-700"], .app-dark [class~="text-orange-700"] { color: #fcd34d; }
 .app-dark input, .app-dark textarea, .app-dark select { color: #ecf0e5; }
 .app-dark input::placeholder, .app-dark textarea::placeholder { color: #66767c; }
-.app-dark .animate-shimmer { background: linear-gradient(90deg, #12181b 25%, #1b2327 50%, #12181b 75%); background-size: 200% 100%; }
+.app-dark .animate-shimmer { background: linear-gradient(90deg, #0F1424 25%, #182038 50%, #0F1424 75%); background-size: 200% 100%; }
