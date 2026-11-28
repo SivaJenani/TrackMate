@@ -3,7 +3,6 @@
 import { Menu, Bell } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import Link from "next/link";
-import { GlobalSearch } from "./GlobalSearch";
 
 interface TopBarProps {
   title: string;
@@ -14,7 +13,7 @@ interface TopBarProps {
 
 export function TopBar({ title, onMenuClick, notificationCount = 0, user }: TopBarProps) {
   return (
-    <header className="h-16 bg-[var(--app-bg)] backdrop-blur-md border-b border-white/[0.08] flex items-center justify-between px-4 lg:px-6 sticky top-0 z-20">
+    <header className="h-16 bg-[#05080a]/85 backdrop-blur-md border-b border-white/[0.08] flex items-center justify-between px-4 lg:px-6 sticky top-0 z-20">
       <div className="flex items-center gap-4">
         <button
           onClick={onMenuClick}
@@ -24,8 +23,6 @@ export function TopBar({ title, onMenuClick, notificationCount = 0, user }: TopB
         </button>
         <h1 className="text-lg font-semibold text-[#ecf0e5]">{title}</h1>
       </div>
-
-      <GlobalSearch />
 
       <div className="flex items-center gap-3">
         <Link
