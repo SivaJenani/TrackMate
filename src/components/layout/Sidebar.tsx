@@ -30,7 +30,7 @@ export function Sidebar({ user, isOpen, onClose, onSignOut }: SidebarProps) {
   const pathname = usePathname();
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-[#0E1A24] text-white">
+    <div className="flex flex-col h-full bg-[#090D19] text-white">
       {/* Logo */}
       <div className="flex items-center gap-3 px-6 py-5 border-b border-white/10">
         <div className="w-9 h-9 rounded-xl bg-[#00B4F0] flex items-center justify-center">
