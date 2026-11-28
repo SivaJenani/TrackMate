@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Activity, LayoutDashboard, CheckSquare, Target, Flame,
-  BarChart3, CalendarDays, Bell, Settings, X, LogOut,
+  CalendarDays, Bell, Settings, X, LogOut,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { cn } from "@/lib/utils";
@@ -15,7 +15,6 @@ const navItems = [
   { label: "Tasks", href: "/tasks", icon: CheckSquare },
   { label: "Goals", href: "/goals", icon: Target },
   { label: "Habits", href: "/habits", icon: Flame },
-  { label: "Analytics", href: "/analytics", icon: BarChart3 },
   { label: "Calendar", href: "/calendar", icon: CalendarDays },
   { label: "Notifications", href: "/notifications", icon: Bell },
 ];
