@@ -13,7 +13,7 @@ interface TopBarProps {
 
 export function TopBar({ title, onMenuClick, notificationCount = 0, user }: TopBarProps) {
   return (
-    <header className="h-16 bg-[#05080a]/85 backdrop-blur-md border-b border-white/[0.08] flex items-center justify-between px-4 lg:px-6 sticky top-0 z-20">
+    <header className="h-16 bg-[#090D19]/85 backdrop-blur-md border-b border-white/[0.08] flex items-center justify-between px-4 lg:px-6 sticky top-0 z-20">
       <div className="flex items-center gap-4">
         <button
           onClick={onMenuClick}
