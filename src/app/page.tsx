@@ -23,9 +23,9 @@ const steps = [
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-cyan-50/50 via-white to-blue-50/30">
+    <div className="app-dark min-h-screen bg-[#090D19]">
       {/* Navbar */}
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+      <nav className="sticky top-0 z-50 bg-[#090D19]/80 backdrop-blur-md border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-[#00B4F0] flex items-center justify-center">
@@ -186,7 +186,7 @@ export default function LandingPage() {
             initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
-            className="bg-[#0E1A24] rounded-3xl p-12 sm:p-16"
+            className="bg-[#0F1424] rounded-3xl p-12 sm:p-16"
           >
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">Ready to Boost Your Productivity?</h2>
             <p className="text-gray-400 mb-8 max-w-lg mx-auto">Join thousands of users who are tracking their progress and achieving their goals with TrackMate.</p>
