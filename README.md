@@ -9,7 +9,6 @@ TrackMate is a full-stack productivity and personal progress tracking applicatio
 - **Task Management**: Full CRUD with status (`todo`, `in_progress`, `completed`), priority (`low`, `medium`, `high`), categories, deadlines, search, filtering, and sorting.
 - **Goal Management**: Create personal/professional goals, track progress percentages, and manage expandable milestones.
 - **Habit Tracker**: Weekly habit grid with daily completion toggles, custom colors, frequencies, and streak tracking.
-- **Analytics**: Interactive Recharts visualizations (weekly activity bar chart, productivity trend line chart, tasks by status and priority donut charts).
 - **Calendar View**: Monthly calendar displaying tasks on their deadline dates with priority color coding and day-detail modals.
 - **Notifications**: Notification center with unread filtering, mark-as-read, mark-all-read, and delete actions.
 - **Profile & Settings**: Manage user profile info, notification preferences, and theme settings.
