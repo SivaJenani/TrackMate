@@ -21,7 +21,7 @@ export default function DashboardGroupLayout({
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#05080a]">
+      <div className="min-h-screen flex items-center justify-center bg-[#090D19]">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-[#00B4F0] border-t-transparent rounded-full animate-spin" />
           <p className="text-[#8fa0a6] font-medium">Loading TrackMate...</p>
