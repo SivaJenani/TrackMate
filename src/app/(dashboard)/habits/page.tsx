@@ -138,7 +138,7 @@ export default function HabitsPage() {
             <button
               key={opt.name} type="button" role="radio" aria-checked={selected} title={opt.label} aria-label={opt.label}
               onClick={() => setIcon(selected ? null : opt.name)}
-              className={`flex h-10 w-full items-center justify-center rounded-lg border transition-all ${selected ? "border-[#36d2ff] bg-[#0b0f11] text-[#36d2ff] shadow-[0_0_10px_rgba(54,210,255,.35)]" : "border-gray-200 bg-[#0b0f11] text-[#7d8e94] hover:text-[#9ceaff]"}`}
+              className={`flex h-10 w-full items-center justify-center rounded-lg border transition-all ${selected ? "border-[#36d2ff] bg-[#070A14] text-[#36d2ff] shadow-[0_0_10px_rgba(54,210,255,.35)]" : "border-gray-200 bg-[#070A14] text-[#7d8e94] hover:text-[#9ceaff]"}`}
             >
               <Ic className="h-5 w-5" strokeWidth={1.75} />
             </button>
@@ -154,11 +154,11 @@ export default function HabitsPage() {
   );
 
   return (
-    <div className="space-y-4 rounded-2xl bg-[#080b0d] p-4 sm:p-6">
+    <div className="space-y-4 rounded-2xl bg-[#0F1424] p-4 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-2xl font-bold text-[#ecf0e5]">Habit Tracker</h2>
         <div className="flex items-center gap-3">
-          <div className="flex rounded-lg border border-white/10 bg-[#0b0f11] p-0.5">{toggleBtn("month", "Month")}{toggleBtn("week", "Week")}</div>
+          <div className="flex rounded-lg border border-white/10 bg-[#070A14] p-0.5">{toggleBtn("month", "Month")}{toggleBtn("week", "Week")}</div>
           <Button variant="primary" onClick={openCreateModal}><Plus className="w-4 h-4 mr-2" /> Add Habit</Button>
         </div>
       </div>
@@ -166,7 +166,7 @@ export default function HabitsPage() {
       {habits.length === 0 ? (
         <EmptyState icon={Flame} title="No habits yet" description="Start building consistent habits!" actionLabel="Add Habit" onAction={openCreateModal} />
       ) : view === "month" ? (
-        <div className="rounded-xl border border-white/[0.08] bg-[#0b0f11] p-3 sm:p-4">
+        <div className="rounded-xl border border-white/[0.08] bg-[#070A14] p-3 sm:p-4">
           <div className="mb-3 flex items-center justify-between">
             <button aria-label="Previous month" onClick={() => setMonthAnchor(addMonths(monthAnchor, -1))} className="rounded-lg p-1.5 text-[#9baab0] hover:bg-white/5 hover:text-white"><ChevronLeft className="h-4 w-4" /></button>
             <p className="text-sm font-semibold text-[#ecf0e5]">{format(monthAnchor, "MMMM yyyy")}</p>
@@ -176,7 +176,7 @@ export default function HabitsPage() {
             <table className="border-separate border-spacing-0 text-[#dce1d5]" aria-label="Habit matrix for the month">
               <thead>
                 <tr>
-                  <th className="sticky left-0 z-20 min-w-[140px] bg-[#0b0f11] pb-1 pr-3 text-left text-[10px] font-medium uppercase tracking-wide text-[#74848a]">Habit</th>
+                  <th className="sticky left-0 z-20 min-w-[140px] bg-[#070A14] pb-1 pr-3 text-left text-[10px] font-medium uppercase tracking-wide text-[#74848a]">Habit</th>
                   {monthDays.map((d, i) => {
                     const newWeek = i > 0 && d.getDay() === 1;
                     return (
@@ -195,7 +195,7 @@ export default function HabitsPage() {
                   const Ic = getHabitIcon(habit);
                   return (
                     <tr key={habit.id} className="group">
-                      <td className="sticky left-0 z-10 border-t border-white/[0.06] bg-[#0b0f11] py-1.5 pr-3">
+                      <td className="sticky left-0 z-10 border-t border-white/[0.06] bg-[#070A14] py-1.5 pr-3">
                         <div className="flex items-center gap-2"><Ic className="h-4 w-4 shrink-0 text-[#36d2ff]" strokeWidth={1.75} /><span className="max-w-[110px] truncate text-xs font-medium text-[#dce1d5]">{habit.name}</span></div>
                       </td>
                       {monthDays.map((d, i) => {
@@ -229,7 +229,7 @@ export default function HabitsPage() {
           </div>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-white/[0.08] bg-[#0b0f11] p-4">
+        <div className="overflow-x-auto rounded-xl border border-white/[0.08] bg-[#070A14] p-4">
           <table className="w-full text-[#dce1d5]">
             <thead>
               <tr>
