@@ -37,7 +37,7 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-cyan-50/30 via-white to-blue-50/20">
+    <div className="app-dark min-h-screen bg-[#05080a]">
       <Sidebar
         user={user}
         isOpen={sidebarOpen}
