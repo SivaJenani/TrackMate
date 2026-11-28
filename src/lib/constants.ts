@@ -22,7 +22,6 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Tasks', href: '/tasks', icon: 'CheckSquare' },
   { label: 'Goals', href: '/goals', icon: 'Target' },
   { label: 'Habits', href: '/habits', icon: 'Flame' },
-  { label: 'Analytics', href: '/analytics', icon: 'BarChart3' },
   { label: 'Settings', href: '/settings', icon: 'Settings' },
 ];
 
