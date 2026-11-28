@@ -58,6 +58,7 @@ export interface Habit {
   frequency: HabitFrequency;
   color: string;
   icon?: string | null;
+  goal_days?: number | null;
   streak: number;
   created_at: string;
   updated_at: string;
