@@ -11,7 +11,6 @@ export const config = {
     '/tasks/:path*',
     '/goals/:path*',
     '/habits/:path*',
-    '/analytics/:path*',
     '/calendar/:path*',
     '/notifications/:path*',
     '/profile/:path*',
