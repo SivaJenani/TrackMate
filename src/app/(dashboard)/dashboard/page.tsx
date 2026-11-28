@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Activity, ArrowUpRight, CheckSquare, Flame, Target, Trophy, Zap } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -202,17 +202,6 @@ export default function DashboardPage() {
   const weekPercent = weekPossible ? Math.round((weekTotal / weekPossible) * 100) : 0;
   const monthlyConsistency = currentMonthRate;
   const tasksDone = tasks.filter((task) => task.status === "completed").length;
-  const toggleTask = useCallback(async (task: Task) => {
-    const next = task.status === "completed" ? "todo" : "completed";
-    const stamp = new Date().toISOString();
-    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status: next, updated_at: stamp } : t)));
-    try {
-      const res = await fetch(`/api/tasks/${task.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: next }) });
-      if (!res.ok) throw new Error("failed");
-    } catch {
-      setTasks((prev) => prev.map((t) => (t.id === task.id ? task : t)));
-    }
-  }, []);
   const tasksTotal = tasks.length;
   const taskPct = tasksTotal ? Math.round((tasksDone / tasksTotal) * 100) : 0;
   const rollingRate = (end: Date) => {
@@ -230,7 +219,6 @@ export default function DashboardPage() {
   const fallbackOpen = !dueToday.length;
   const todayList = (fallbackOpen ? tasks.filter((t) => t.status !== "completed") : dueToday).slice(0, 6);
   const todayDone = todayList.filter((t) => t.status === "completed").length;
-  const todayPct = todayList.length ? Math.round((todayDone / todayList.length) * 100) : 0;
   const trendData = useMemo(() => {
     const out: { label: string; value: number; done: number; total: number }[] = [];
     for (let i = trendRange - 1; i >= 0; i--) {
@@ -345,24 +333,19 @@ export default function DashboardPage() {
       </div>
 
       <div className={`${panel("flex flex-col p-5")}`}>
-        <CardHead icon={CheckSquare} title="Today's Tasks" sub={todayList.length ? (fallbackOpen ? "Nothing due today, showing open tasks" : `${todayDone} of ${todayList.length} completed`) : undefined} right={todayList.length ? <span className="text-xs font-semibold text-[#9baab0]">{todayPct}%</span> : undefined} />
+        <CardHead icon={CheckSquare} title="Today's Tasks" sub={todayList.length ? (fallbackOpen ? "Nothing due today, showing open tasks" : `${todayDone} of ${todayList.length} completed`) : undefined} />
         {todayList.length ? (
-          <>
-            <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-white/[0.08]"><div className="h-full rounded-full bg-[#36d2ff]" style={{ width: `${todayPct}%` }} /></div>
-            <ul className="divide-y divide-white/[0.06]">
+          <ul className="divide-y divide-white/[0.06]">
               {todayList.map((t) => {
                 const done = t.status === "completed";
                 return (
-                  <li key={t.id}>
-                    <button onClick={() => toggleTask(t)} aria-pressed={done} className="flex w-full items-center gap-3 py-2 text-left text-xs">
-                      <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${done ? "border-[#36d2ff] bg-[#36d2ff] text-[#05080B]" : "border-white/25"}`}>{done && <svg viewBox="0 0 12 12" className="h-3 w-3"><path d="M2.5 6.5l2.2 2.2L9.5 3.8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>}</span>
-                      <span className={`truncate ${done ? "text-[#74848a] line-through" : "text-[#dce1d5]"}`}>{t.title}</span>
-                    </button>
+                  <li key={t.id} className="flex items-center gap-3 py-2 text-xs">
+                    <span aria-hidden="true" className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${done ? "border-[#36d2ff] bg-[#36d2ff] text-[#05080B]" : "border-white/25"}`}>{done && <svg viewBox="0 0 12 12" className="h-3 w-3"><path d="M2.5 6.5l2.2 2.2L9.5 3.8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>}</span>
+                    <span className={`truncate ${done ? "text-[#74848a] line-through" : "text-[#dce1d5]"}`}>{t.title}</span>
                   </li>
                 );
               })}
-            </ul>
-          </>
+          </ul>
         ) : <Empty text={loaded ? "No open tasks. Add one in Tasks." : "Loading..."} />}
       </div>
     </section>
