@@ -92,6 +92,7 @@ export const createHabitSchema = z.object({
     .string()
     .regex(/^#([0-9A-Fa-f]{6})$/, 'Must be a valid hex color')
     .default('#00B4F0'),
+  icon: z.string().max(40).nullable().optional(),
 });
 
 // ── Milestone Schema ──────────────────────────────────────────────────────────
