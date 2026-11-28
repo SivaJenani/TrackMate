@@ -389,6 +389,7 @@ export default function DashboardPage() {
               const isDone = days.has(iso(day));
               return <div key={iso(day)} className="flex flex-col items-center gap-1"><span className="text-[8px] text-[#74848a]">{SHORT_DAYS[i]}</span><span className={`h-4 w-full rounded-sm ${isDone ? "bg-[#36d2ff] shadow-[0_0_8px_rgba(54,210,255,.25)]" : "bg-white/[0.07]"}`} aria-label={`${habit.name}, ${DAY_NAMES[i]} ${isDone ? "completed" : "not completed"}`} /></div>;
             })}</div>
+            {habit.goal_days ? (() => { const prefix = iso(now).slice(0, 7); const done = [...days].filter((k) => k.startsWith(prefix)).length; return <div className="mt-3"><div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[.1em] text-[#9baab0]"><span>Monthly goal</span><span className="text-[#36d2ff]">{done}/{habit.goal_days} days</span></div></div>; })() : null}
             <p className="mt-3 truncate text-[10px] text-[#87969a]">{habit.frequency} · {habit.description || "Keep showing up"}</p>
           </article>;
         })}
