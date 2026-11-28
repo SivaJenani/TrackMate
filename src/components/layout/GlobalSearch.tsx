@@ -53,7 +53,7 @@ export function GlobalSearch() {
 
   return (
     <div ref={boxRef} className="relative hidden w-full max-w-sm md:block">
-      <label className="flex items-center gap-2 rounded-xl border border-white/10 bg-[#132130] px-3 py-2 text-sm focus-within:border-[#36d2ff]/60">
+      <label className="flex items-center gap-2 rounded-xl border border-white/10 bg-[#0F1424] px-3 py-2 text-sm focus-within:border-[#36d2ff]/60">
         <Search className="h-4 w-4 shrink-0 text-[#8fa0a6]" />
         <input
           ref={inputRef} value={query} placeholder="Search tasks, habits, goals..." aria-label="Search tasks, habits, goals"
@@ -65,7 +65,7 @@ export function GlobalSearch() {
         <kbd className="shrink-0 rounded-md border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[10px] text-[#8fa0a6]">⌘ K</kbd>
       </label>
       {open && query.trim() && (
-        <ul className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-xl border border-white/10 bg-[#132130] shadow-xl">
+        <ul className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-xl border border-white/10 bg-[#0F1424] shadow-xl">
           {items === null ? <li className="px-3 py-3 text-xs text-[#8fa0a6]">Searching...</li>
             : hits.length === 0 ? <li className="px-3 py-3 text-xs text-[#8fa0a6]">No matches</li>
             : hits.map((h) => {
