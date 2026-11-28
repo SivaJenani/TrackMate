@@ -21,10 +21,10 @@ export default function DashboardGroupLayout({
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-cyan-50/30 via-white to-blue-50/20">
+      <div className="min-h-screen flex items-center justify-center bg-[#05080a]">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-[#00B4F0] border-t-transparent rounded-full animate-spin" />
-          <p className="text-gray-500 font-medium">Loading TrackMate...</p>
+          <p className="text-[#8fa0a6] font-medium">Loading TrackMate...</p>
         </div>
       </div>
     );
