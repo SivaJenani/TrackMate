@@ -62,3 +62,5 @@ body {
 .app-dark input, .app-dark textarea, .app-dark select { color: #ecf0e5; }
 .app-dark input::placeholder, .app-dark textarea::placeholder { color: #66767c; }
 .app-dark .animate-shimmer { background: linear-gradient(90deg, #0F1424 25%, #182038 50%, #0F1424 75%); background-size: 200% 100%; }
+
+.app-dark .auth-card input { background-color: #070A14; }
