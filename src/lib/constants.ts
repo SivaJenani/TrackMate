@@ -4,7 +4,7 @@ import type { TaskStatus, TaskPriority, HabitFrequency } from '@/types';
 
 export const BRAND = {
   black: '#05080B',
-  slate: '#0E1A24',
+  slate: '#090D19',
   cyan: '#00B4F0',
   white: '#FFFFFF',
 } as const;
