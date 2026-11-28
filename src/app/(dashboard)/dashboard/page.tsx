@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { ArrowUpRight, Flame, Trophy } from "lucide-react";
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { Activity, ArrowUpRight, CheckSquare, Flame, Target, Trophy, Zap } from "lucide-react";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { getHabitIcon } from "@/lib/habit-icons";
-import type { DashboardStats, Habit, HabitLog, Task } from "@/types";
+import type { DashboardStats, Goal, Habit, HabitLog, Task } from "@/types";
 
 const CYAN = "#36d2ff";
 const MUTED = "#8b9480";
@@ -52,11 +53,54 @@ function panel(extra = "") {
   return `rounded-2xl border border-white/[0.08] bg-[#0F1424] shadow-[0_8px_30px_rgba(0,0,0,.18)] ${extra}`;
 }
 
+function MiniRing({ value, size = 64 }: { value: number; size?: number }) {
+  const r = 40;
+  const c = 2 * Math.PI * r;
+  const safe = Math.max(0, Math.min(100, value));
+  return (
+    <svg role="img" aria-label={`${safe}% complete`} width={size} height={size} viewBox="0 0 100 100" className="shrink-0">
+      <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(255,255,255,.08)" strokeWidth="9" />
+      <circle cx="50" cy="50" r={r} fill="none" stroke={CYAN} strokeWidth="9" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - safe / 100)} transform="rotate(-90 50 50)" />
+      <text x="50" y="51" textAnchor="middle" dominantBaseline="middle" fill="#f0f2e9" fontSize="22" fontWeight="700">{safe}%</text>
+    </svg>
+  );
+}
+
+function Empty({ text }: { text: string }) {
+  return <p className="flex flex-1 items-center justify-center rounded-xl border border-dashed border-white/10 px-4 py-8 text-center text-xs text-[#86969c]">{text}</p>;
+}
+
+function CardHead({ icon: Icon, title, sub, right }: { icon: typeof Target; title: string; sub?: string; right?: React.ReactNode }) {
+  return (
+    <div className="mb-4 flex items-start justify-between gap-3">
+      <div className="flex min-w-0 items-start gap-3">
+        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-[#36d2ff]"><Icon className="h-4 w-4" strokeWidth={1.75} /></span>
+        <div className="min-w-0"><h2 className="truncate text-sm font-semibold text-[#f0f2e9]">{title}</h2>{sub && <p className="mt-0.5 text-[11px] text-[#86969c]">{sub}</p>}</div>
+      </div>
+      {right}
+    </div>
+  );
+}
+
+function ago(value: string, now: Date) {
+  const mins = Math.max(0, Math.round((now.getTime() - new Date(value).getTime()) / 60000));
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.round(hrs / 24);
+  return days === 1 ? "Yesterday" : `${days}d ago`;
+}
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
   const [logs, setLogs] = useState<HabitLog[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [showAllActivity, setShowAllActivity] = useState(false);
+  const [trendRange, setTrendRange] = useState<7 | 30 | 90>(30);
   const [weekSelection, setWeekSelection] = useState<"this" | "last">("this");
   const now = useMemo(() => new Date(), []);
   const today = iso(now);
@@ -76,18 +120,21 @@ export default function DashboardPage() {
     let live = true;
     const load = async () => {
       try {
-        const [s, t, h, l] = await Promise.all([
+        const [s, t, h, l, g] = await Promise.all([
           fetch("/api/dashboard"),
           fetch("/api/tasks?sortBy=updated_at&sortOrder=desc"),
           fetch("/api/habits"),
           fetch(`/api/habits/logs?startDate=${historyStart}&endDate=${today}`),
+          fetch("/api/goals"),
         ]);
         if (!live) return;
         if (s.ok) setStats(await s.json());
         if (t.ok) setTasks(await t.json());
         if (h.ok) setHabits(await h.json());
         if (l.ok) setLogs(await l.json());
+        if (g.ok) setGoals(await g.json());
       } catch (e) { console.error(e); }
+      finally { if (live) setLoaded(true); }
     };
     load();
     return () => { live = false; };
@@ -111,10 +158,6 @@ export default function DashboardPage() {
     const key = iso(date);
     const completed = uniqueHabits.filter((habit) => logsByHabit.get(habit.id)?.has(key)).length;
     return { day: DAY_NAMES[i].toUpperCase(), date: date.getDate(), value: uniqueHabits.length ? Math.round((completed / uniqueHabits.length) * 100) : 0, completed };
-  });
-  const overallChart = weekDays.map((day, i) => {
-    const completed = uniqueHabits.filter((habit) => logsByHabit.get(habit.id)?.has(day)).length;
-    return { day: DAY_NAMES[i].toUpperCase(), date: dates[i].getDate(), value: uniqueHabits.length ? Math.round((completed / uniqueHabits.length) * 100) : 0, completed };
   });
   const completionPercentForRange = (start: Date, days: number) => {
     if (!uniqueHabits.length) return 0;
@@ -159,6 +202,55 @@ export default function DashboardPage() {
   const weekPercent = weekPossible ? Math.round((weekTotal / weekPossible) * 100) : 0;
   const monthlyConsistency = currentMonthRate;
   const tasksDone = tasks.filter((task) => task.status === "completed").length;
+  const toggleTask = useCallback(async (task: Task) => {
+    const next = task.status === "completed" ? "todo" : "completed";
+    const stamp = new Date().toISOString();
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status: next, updated_at: stamp } : t)));
+    try {
+      const res = await fetch(`/api/tasks/${task.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: next }) });
+      if (!res.ok) throw new Error("failed");
+    } catch {
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? task : t)));
+    }
+  }, []);
+  const tasksTotal = tasks.length;
+  const taskPct = tasksTotal ? Math.round((tasksDone / tasksTotal) * 100) : 0;
+  const rollingRate = (end: Date) => {
+    if (!uniqueHabits.length) return null;
+    let done = 0;
+    for (let i = 0; i < 7; i++) { const key = iso(shift(end, -i)); done += uniqueHabits.filter((h) => logsByHabit.get(h.id)?.has(key)).length; }
+    return Math.round((done / (uniqueHabits.length * 7)) * 100);
+  };
+  const habitWeek = rollingRate(now);
+  const habitPrev = rollingRate(shift(now, -7));
+  const habitDelta = habitWeek !== null && habitPrev !== null ? habitWeek - habitPrev : null;
+  const goalRows = [...goals.filter((g) => g.status === "active")].sort((a, b) => b.updated_at.localeCompare(a.updated_at)).slice(0, 4);
+  const localDay = (v: string) => iso(new Date(v));
+  const dueToday = tasks.filter((t) => t.deadline && localDay(t.deadline) <= today && (t.status !== "completed" || localDay(t.deadline) === today));
+  const fallbackOpen = !dueToday.length;
+  const todayList = (fallbackOpen ? tasks.filter((t) => t.status !== "completed") : dueToday).slice(0, 6);
+  const todayDone = todayList.filter((t) => t.status === "completed").length;
+  const todayPct = todayList.length ? Math.round((todayDone / todayList.length) * 100) : 0;
+  const trendData = useMemo(() => {
+    const out: { label: string; value: number; done: number; total: number }[] = [];
+    for (let i = trendRange - 1; i >= 0; i--) {
+      const d = shift(new Date(), -i);
+      const key = iso(d);
+      const created = tasks.filter((t) => localDay(t.created_at) <= key);
+      const done = created.filter((t) => t.status === "completed" && localDay(t.updated_at) <= key).length;
+      out.push({ label: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }), value: created.length ? Math.round((done / created.length) * 100) : 0, done, total: created.length });
+    }
+    return out;
+  }, [tasks, trendRange]);
+  const activity = useMemo(() => {
+    const items: { at: string; text: string; icon: typeof Flame }[] = [];
+    for (const t of tasks) if (t.status === "completed") items.push({ at: t.updated_at, text: `Completed "${t.title}"`, icon: CheckSquare });
+    const names = new Map(habits.map((h) => [h.id, h.name]));
+    for (const l of logs) if (names.has(l.habit_id)) items.push({ at: l.created_at, text: `Logged "${names.get(l.habit_id)}"`, icon: Flame });
+    for (const g of goals) items.push({ at: g.updated_at, text: g.status === "completed" ? `Completed goal "${g.title}"` : `Updated goal "${g.title}" (${g.progress}%)`, icon: Target });
+    return items.sort((a, b) => b.at.localeCompare(a.at));
+  }, [tasks, habits, logs, goals]);
+  const activityShown = activity.slice(0, showAllActivity ? 15 : 5);
   const heatmapWeeks = Array.from({ length: 12 }, (_, weekIndex) =>
     Array.from({ length: 7 }, (_, dayIndex) => historyDates[weekIndex * 7 + dayIndex])
   );
@@ -195,34 +287,106 @@ export default function DashboardPage() {
         <p className="dash-kicker mb-3">Your discipline dashboard</p>
         <h1 className="max-w-2xl text-4xl font-extrabold uppercase leading-[.98] tracking-tight text-[#f0f2e9] sm:text-5xl lg:text-6xl">Discipline today,<br /><span className="dash-accent">freedom</span> tomorrow.</h1>
         <p className="mt-4 max-w-lg text-sm leading-relaxed text-[#9baab0] sm:text-base">Discipline is the bridge between <span className="text-[#9ceaff]">goals</span> and accomplishment.</p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <div className="rounded-xl border border-white/10 bg-black/30 px-4 py-3"><div className="text-xs text-[#8b9480]">Tasks completed</div><div className="mt-1 text-xl font-bold text-white">{tasksDone}<span className="ml-1 text-sm font-medium text-[#8b9480]">/ {tasks.length}</span></div></div>
-          <div className="rounded-xl border border-white/10 bg-black/30 px-4 py-3"><div className="text-xs text-[#8b9480]">Habit consistency this week</div><div className="mt-1 text-xl font-bold text-white">{weekPercent}<span className="ml-1 text-sm font-medium text-[#8b9480]">%</span></div></div>
-        </div>
       </div>
     </section>
 
-    <section className="grid gap-4 lg:grid-cols-3">
-      <div className={`${panel("dash-border p-4 sm:p-5 lg:col-span-2")} dash-glow`}>
-        <div className="mb-3 flex items-center justify-between gap-3"><div><p className="dash-kicker">Overall progress</p><p className="mt-1 text-xs text-[#86969c]">Habit consistency · Monday to Sunday</p></div><div className="text-right"><span className="text-lg font-bold dash-accent">{monthlyChange >= 0 ? "+" : ""}{monthlyChange}%</span><p className="text-[10px] text-[#86969c]">vs last month</p></div></div>
+    <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 [&>*]:min-w-0">
+      <div className={`${panel("flex items-center justify-between gap-3 p-4")}`}>
+        <div className="min-w-0"><p className="text-xs text-[#9baab0]">Tasks Completed</p><p className="mt-1 text-2xl font-bold">{tasksDone}<span className="text-base font-medium text-[#86969c]"> / {tasksTotal}</span></p></div>
+        <MiniRing value={taskPct} />
+      </div>
+      <div className={`${panel("p-4")}`}>
+        <p className="text-xs text-[#9baab0]">Habit Consistency</p>
+        <p className="mt-1 text-2xl font-bold">{habitWeek === null ? "--" : `${habitWeek}%`}</p>
+        <p className="mt-1 text-[11px] text-[#86969c]">{habitDelta === null ? "No habit data yet" : <><span className="font-semibold text-[#36d2ff]">{habitDelta >= 0 ? "+" : ""}{habitDelta}%</span> vs last week</>}</p>
+      </div>
+      <div className={`${panel("flex items-center justify-between gap-3 p-4")}`}>
+        <div><p className="text-xs text-[#9baab0]">Current Streak</p><p className="mt-1 text-2xl font-bold">{currentStreak}<span className="text-base font-medium text-[#86969c]"> {currentStreak === 1 ? "Day" : "Days"}</span></p></div>
+        <Flame className="h-9 w-9 shrink-0 text-[#36d2ff]" strokeWidth={1.5} />
+      </div>
+      <div className={`${panel("flex items-center justify-between gap-3 p-4")}`}>
+        <div><p className="text-xs text-[#9baab0]">Longest Streak</p><p className="mt-1 text-2xl font-bold">{longestStreak}<span className="text-base font-medium text-[#86969c]"> {longestStreak === 1 ? "Day" : "Days"}</span></p></div>
+        <Trophy className="h-9 w-9 shrink-0 text-[#36d2ff]" strokeWidth={1.5} />
+      </div>
+    </section>
+
+    <section className="grid gap-4 lg:grid-cols-3 [&>*]:min-w-0">
+      <div className={`${panel("flex flex-col p-5")}`}>
+        <CardHead icon={Target} title="Goal Progress" sub="Your active goals" right={<Link href="/goals" className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-[#36d2ff] hover:text-[#9ceaff]">View Goals <ArrowUpRight className="h-3 w-3" /></Link>} />
+        {goalRows.length ? (
+          <ul className="space-y-4">
+            {goalRows.map((g) => (
+              <li key={g.id}>
+                <div className="mb-1.5 flex items-center justify-between gap-3 text-xs"><span className="truncate text-[#dce1d5]">{g.title}</span><span className="shrink-0 font-semibold text-[#f0f2e9]">{g.progress}%</span></div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.08]"><div className="h-full rounded-full bg-[#36d2ff]" style={{ width: `${Math.max(0, Math.min(100, g.progress))}%` }} /></div>
+              </li>
+            ))}
+          </ul>
+        ) : <Empty text={loaded ? "No active goals yet. Create one in Goals." : "Loading..."} />}
+      </div>
+
+      <div className={`${panel("flex flex-col p-5")}`}>
+        <CardHead icon={Activity} title="Weekly Habit Consistency" sub={weekSelection === "this" ? "Completion rate, this week" : "Completion rate, last week"} right={<label className="relative shrink-0"><span className="sr-only">Select week</span><select value={weekSelection} onChange={(event) => setWeekSelection(event.target.value as "this" | "last")} className="appearance-none rounded-lg border border-white/10 bg-[#070A14] py-1 pl-2.5 pr-6 text-[10px] font-medium text-[#9baab0] focus:outline-none focus:ring-1 focus:ring-[#36d2ff]"><option value="this">This Week</option><option value="last">Last Week</option></select><span aria-hidden="true" className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-[#9baab0]">⌄</span></label>} />
+        {uniqueHabits.length ? (
+          <div className="h-[200px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={weekChart} margin={{ top: 18, right: 4, left: -6, bottom: 0 }} barCategoryGap="22%">
+                <CartesianGrid vertical={false} stroke="rgba(255,255,255,.07)" />
+                <XAxis dataKey="day" tick={{ fill: MUTED, fontSize: 10 }} tickLine={false} axisLine={false} />
+                <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={(v) => `${v}%`} tick={{ fill: MUTED, fontSize: 10 }} tickLine={false} axisLine={false} width={46} />
+                <Tooltip cursor={{ fill: "rgba(255,255,255,.04)" }} formatter={(v, _n, item) => [`${v}% (${item.payload.completed} / ${uniqueHabits.length} habits)`, "Completion"]} contentStyle={{ background: "#0F1424", border: "1px solid rgba(54,210,255,.24)", borderRadius: 10, color: "#f0f2e9", fontSize: 12 }} />
+                <Bar dataKey="value" fill={CYAN} radius={[5, 5, 0, 0]} maxBarSize={30} isAnimationActive={false}>
+                  <LabelList dataKey="value" position="top" formatter={(v) => `${v}%`} fill="#9ceaff" fontSize={9} />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        ) : <Empty text={loaded ? "Add a habit to see your weekly consistency." : "Loading..."} />}
+      </div>
+
+      <div className={`${panel("flex flex-col p-5")}`}>
+        <CardHead icon={CheckSquare} title="Today's Tasks" sub={todayList.length ? (fallbackOpen ? "Nothing due today, showing open tasks" : `${todayDone} of ${todayList.length} completed`) : undefined} right={todayList.length ? <span className="text-xs font-semibold text-[#9baab0]">{todayPct}%</span> : undefined} />
+        {todayList.length ? (
+          <>
+            <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-white/[0.08]"><div className="h-full rounded-full bg-[#36d2ff]" style={{ width: `${todayPct}%` }} /></div>
+            <ul className="divide-y divide-white/[0.06]">
+              {todayList.map((t) => {
+                const done = t.status === "completed";
+                return (
+                  <li key={t.id}>
+                    <button onClick={() => toggleTask(t)} aria-pressed={done} className="flex w-full items-center gap-3 py-2 text-left text-xs">
+                      <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${done ? "border-[#36d2ff] bg-[#36d2ff] text-[#05080B]" : "border-white/25"}`}>{done && <svg viewBox="0 0 12 12" className="h-3 w-3"><path d="M2.5 6.5l2.2 2.2L9.5 3.8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>}</span>
+                      <span className={`truncate ${done ? "text-[#74848a] line-through" : "text-[#dce1d5]"}`}>{t.title}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        ) : <Empty text={loaded ? "No open tasks. Add one in Tasks." : "Loading..."} />}
+      </div>
+    </section>
+
+    <section className="grid gap-4 lg:grid-cols-3 [&>*]:min-w-0">
+      <div className={`${panel("dash-border p-4 sm:p-5 lg:col-span-2")}`}>
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div><p className="dash-kicker">Productivity trend</p><p className="mt-1 text-xs text-[#86969c]">Task completion rate over time</p></div>
+          <div className="inline-flex shrink-0 rounded-lg border border-white/10 bg-[#070A14] p-0.5">{([7, 30, 90] as const).map((r) => <button key={r} onClick={() => setTrendRange(r)} aria-pressed={trendRange === r} className={`rounded-md px-2.5 py-1 text-[11px] font-semibold ${trendRange === r ? "bg-[#36d2ff] text-[#05080B]" : "text-[#9baab0] hover:text-white"}`}>{r}D</button>)}</div>
+        </div>
         <div className="h-48 sm:h-56">
-          <ResponsiveContainer width="100%" height="100%"><AreaChart data={overallChart} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-            <defs><linearGradient id="dashboardProgressFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={CYAN} stopOpacity={0.24} /><stop offset="100%" stopColor={CYAN} stopOpacity={0.015} /></linearGradient></defs>
+          <ResponsiveContainer width="100%" height="100%"><AreaChart data={trendData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+            <defs><linearGradient id="dashboardTrendFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={CYAN} stopOpacity={0.24} /><stop offset="100%" stopColor={CYAN} stopOpacity={0.015} /></linearGradient></defs>
             <CartesianGrid vertical={false} stroke="rgba(255,255,255,.07)" />
-            <XAxis dataKey="day" tick={{ fill: MUTED, fontSize: 10 }} tickLine={false} axisLine={false} />
-            <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={(value) => `${value}%`} tick={{ fill: MUTED, fontSize: 10 }} tickLine={false} axisLine={false} width={56} />
-            <Tooltip formatter={(value) => [`${value}%`, "Completion"]} labelFormatter={(label, payload) => payload?.[0]?.payload?.date ? `${label} ${payload[0].payload.date}` : label} contentStyle={{ background: "#12191b", border: "1px solid rgba(54,210,255,.24)", borderRadius: 10, color: "#f0f2e9", fontSize: 12 }} labelStyle={{ color: CYAN }} />
-            <Area isAnimationActive={false} type="monotone" dataKey="value" name="Completion" stroke={CYAN} strokeWidth={3} fill="url(#dashboardProgressFill)" dot={{ r: 3, fill: CYAN, stroke: "#0F1424", strokeWidth: 2 }} activeDot={{ r: 5, fill: CYAN, stroke: "#0F1424", strokeWidth: 2 }} />
+            <XAxis dataKey="label" interval={trendRange === 7 ? 0 : trendRange === 30 ? 4 : 13} tick={{ fill: MUTED, fontSize: 10 }} tickLine={false} axisLine={false} />
+            <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={(value) => `${value}%`} tick={{ fill: MUTED, fontSize: 10 }} tickLine={false} axisLine={false} width={46} />
+            <Tooltip formatter={(value, _n, item) => [`${value}% (${item.payload.done} of ${item.payload.total} tasks)`, "Completion rate"]} contentStyle={{ background: "#0F1424", border: "1px solid rgba(54,210,255,.24)", borderRadius: 10, color: "#f0f2e9", fontSize: 12 }} />
+            <Area isAnimationActive={false} type="monotone" dataKey="value" stroke={CYAN} strokeWidth={2.5} fill="url(#dashboardTrendFill)" dot={trendRange === 7 ? { r: 3, fill: CYAN, stroke: "#0F1424", strokeWidth: 2 } : false} />
           </AreaChart></ResponsiveContainer>
         </div>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-        <div className={`${panel("dash-border p-5")} flex items-center justify-between gap-4`}>
-          <div><p className="dash-kicker">Current streak</p><div className="mt-2 flex items-baseline gap-2"><span className="text-5xl font-extrabold text-[#9ceaff]">{currentStreak}</span><span className="text-sm font-semibold uppercase tracking-wider text-[#9baab0]">days</span></div><p className="mt-1 text-xs text-[#86969c]">from consecutive habit logs</p></div><Flame className="h-16 w-16 shrink-0 text-[#36d2ff] drop-shadow-[0_0_14px_rgba(54,210,255,.45)]" strokeWidth={1.5} />
-        </div>
-        <div className={`${panel("dash-border p-5")} flex items-center justify-between gap-4`}>
-          <div><p className="dash-kicker">Longest streak</p><div className="mt-2 flex items-baseline gap-2"><span className="text-4xl font-extrabold text-[#9ceaff]">{longestStreak}</span><span className="text-sm font-semibold uppercase tracking-wider text-[#9baab0]">days</span></div><p className="mt-1 text-xs text-[#86969c]">best consecutive run recorded</p></div><Trophy className="h-11 w-11 shrink-0 text-[#36d2ff]" strokeWidth={1.6} />
-        </div>
+      <div className={`${panel("dash-border flex flex-col p-4 sm:p-5")}`}>
+        <CardHead icon={Zap} title="Recent Activity" sub="Latest tasks, habits and goals" right={activity.length > 5 ? <button onClick={() => setShowAllActivity((v) => !v)} className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-[#36d2ff] hover:text-[#9ceaff]">{showAllActivity ? "Show less" : "View All"} <ArrowUpRight className="h-3 w-3" /></button> : undefined} />
+        {activityShown.length ? <ul className="divide-y divide-white/[0.06]">{activityShown.map((a, i) => { const Icon = a.icon; return <li key={`${a.at}-${i}`} className="flex items-center gap-3 py-2.5 text-xs"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/[0.05] text-[#36d2ff]"><Icon className="h-3.5 w-3.5" strokeWidth={1.75} /></span><span className="min-w-0 flex-1 truncate text-[#dce1d5]">{a.text}</span><span className="shrink-0 text-[11px] text-[#86969c]">{ago(a.at, now)}</span></li>; })}</ul> : <Empty text={loaded ? "No activity yet. Complete a task or log a habit." : "Loading..."} />}
       </div>
     </section>
 
@@ -278,20 +442,10 @@ export default function DashboardPage() {
       </div>
     </section>
 
-    <section className="grid gap-4 lg:grid-cols-2">
+    <section className="grid gap-4">
       <div className={`${panel("dash-border p-4 sm:p-5")}`}>
         <div className="mb-4 flex items-center justify-between"><div><p className="dash-kicker">Streaks</p><p className="mt-1 text-xs text-[#86969c]">Current runs by habit</p></div><Flame className="h-5 w-5 text-[#36d2ff]" /></div>
         <ul className="space-y-3">{[...uniqueHabits].sort((a, b) => b.streak - a.streak).map((habit) => <li key={habit.id} className="flex items-center justify-between gap-3 border-b border-white/[0.06] pb-2 last:border-0"><span className="flex min-w-0 items-center gap-2 truncate text-sm text-[#d9ded2]"><Flame className="h-4 w-4 shrink-0 text-[#36d2ff]" />{habit.name}</span><span className="shrink-0 text-xs font-bold text-[#36d2ff]">{habit.streak} days</span></li>)}{!uniqueHabits.length && <li className="py-4 text-center text-sm text-[#86969c]">No streaks yet. Log a habit to start one.</li>}</ul>
-      </div>
-      <div className={`${panel("dash-border p-4 sm:p-5")}`}>
-        <div className="mb-3 flex items-center justify-between gap-3"><div><p className="dash-kicker">Weekly progress</p><p className="mt-1 text-xs text-[#86969c]">Habit completion by day</p></div><label className="relative"><span className="sr-only">Select week</span><select value={weekSelection} onChange={(event) => setWeekSelection(event.target.value as "this" | "last")} className="appearance-none rounded-lg border border-white/10 bg-[#0F1424] py-1.5 pl-3 pr-7 text-[10px] font-medium text-[#9baab0] focus:outline-none focus:ring-1 focus:ring-[#36d2ff]"><option value="this">This Week</option><option value="last">Last Week</option></select><span aria-hidden="true" className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-[#9baab0]">⌄</span></label></div>
-        <div className="h-48"><ResponsiveContainer width="100%" height="100%"><BarChart data={weekChart} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} barCategoryGap="20%">
-          <CartesianGrid vertical={false} stroke="rgba(255,255,255,.07)" />
-          <XAxis dataKey="day" tick={{ fill: MUTED, fontSize: 10 }} tickLine={false} axisLine={false} />
-          <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={(value) => `${value}%`} tick={{ fill: MUTED, fontSize: 10 }} tickLine={false} axisLine={false} width={56} />
-          <Tooltip formatter={(value, _name, item) => [`${value}%${item.payload.completed !== undefined ? ` (${item.payload.completed} / ${uniqueHabits.length} habits)` : ""}`, "Completion"]} contentStyle={{ background: "#12191b", border: "1px solid rgba(54,210,255,.24)", borderRadius: 10, color: "#f0f2e9", fontSize: 12 }} />
-          <Bar dataKey="value" name="Completion" fill={CYAN} radius={[6, 6, 0, 0]} maxBarSize={30} isAnimationActive={false} />
-        </BarChart></ResponsiveContainer></div>
       </div>
     </section>
 
