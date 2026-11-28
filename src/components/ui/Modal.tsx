@@ -73,7 +73,7 @@ export function Modal({
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
             className={clsx(
-              "relative w-full rounded-2xl bg-white shadow-xl",
+              "relative max-h-[calc(100vh-2rem)] w-full overflow-y-auto rounded-2xl bg-white shadow-xl",
               sizeStyles[size]
             )}
           >
